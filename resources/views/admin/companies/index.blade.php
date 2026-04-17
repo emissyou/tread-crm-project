@@ -107,7 +107,7 @@
                     <td><span class="badge-crm badge-secondary">{{ $c->industry ?? '—' }}</span></td>
                     <td style="font-size:13px;color:var(--crm-muted)">
                         @if($c->email)<div>{{ $c->email }}</div>@endif
-                        @if($c->phone)<div>{{ $c->phone }}</div>@endif
+                        @if($c->phone)<div>{{ formatPhilippinePhone($c->phone) }}</div>@endif
                         @if(!$c->email && !$c->phone)—@endif
                     </td>
                     <td style="font-size:13px">{{ $c->employees ? number_format($c->employees) : '—' }}</td>
@@ -122,11 +122,19 @@
                         <span class="badge-crm badge-{{ $badge }}">{{ ucfirst($c->status) }}</span>
                     </td>
                     <td>
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm" style="background:rgba(59,130,246,.12);color:#3b82f6;border:none;border-radius:6px;padding:4px 10px"
-                                onclick="editCompany({{ $c->id }})"><i class="fas fa-pen"></i></button>
-                            <button class="btn btn-sm" style="background:rgba(239,68,68,.12);color:#ef4444;border:none;border-radius:6px;padding:4px 10px"
-                                onclick="deleteCompany({{ $c->id }}, '{{ addslashes($c->name) }}')"><i class="fas fa-trash"></i></button>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @if(auth()->user()->isAdminOrManager())
+                                <li><a class="dropdown-item" href="#" onclick="editCompany({{ $c->id }}); return false"><i class="fas fa-pen"></i> Edit</a></li>
+                                @endif
+                                @if(auth()->user()->isAdmin())
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteCompany({{ $c->id }}, '{{ addslashes($c->name) }}'); return false"><i class="fas fa-trash"></i> Delete</a></li>
+                                @endif
+                            </ul>
                         </div>
                     </td>
                 </tr>
@@ -173,7 +181,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="crm-label">Phone</label>
-                            <input type="text" name="phone" class="crm-input" placeholder="+1-555-0000">
+                            <input type="text" name="phone" class="crm-input" placeholder="+63 9XX XXX XXXX">
                         </div>
                         <div class="col-md-6">
                             <label class="crm-label">Website</label>

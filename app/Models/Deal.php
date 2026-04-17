@@ -4,17 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Deal extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
-        'title', 'contact_id', 'company_id', 'lead_id',
-        'value', 'stage', 'probability',
+        'customer_id', 'lead_id',
+        'title', 'value', 'stage', 'probability',
         'expected_close_date', 'closed_date',
-        'notes', 'assigned_to',
+        'notes', 'assigned_user_id',
     ];
 
     protected $casts = [
@@ -23,14 +22,9 @@ class Deal extends Model
         'value'               => 'decimal:2',
     ];
 
-    public function contact()
+    public function customer()
     {
-        return $this->belongsTo(Contact::class);
-    }
-
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function lead()
@@ -40,7 +34,7 @@ class Deal extends Model
 
     public function assignedUser()
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     public function tasks()

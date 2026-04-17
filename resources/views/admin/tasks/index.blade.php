@@ -118,11 +118,20 @@
                     <td style="font-size:13px">{{ $task->contact?->full_name ?? '—' }}</td>
                     <td style="font-size:13px">{{ $task->assignedUser?->name ?? '—' }}</td>
                     <td>
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm" style="background:rgba(59,130,246,.12);color:#3b82f6;border:none;border-radius:6px;padding:4px 10px"
-                                onclick="editTask({{ $task->id }})"><i class="fas fa-pen"></i></button>
-                            <button class="btn btn-sm" style="background:rgba(239,68,68,.12);color:#ef4444;border:none;border-radius:6px;padding:4px 10px"
-                                onclick="deleteTask({{ $task->id }}, '{{ addslashes($task->title) }}')"><i class="fas fa-trash"></i></button>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="padding:6px 10px">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="viewTask({{ $task->id }}); return false"><i class="fas fa-eye"></i> View</a></li>
+                                @if(auth()->user()->isAdminOrManager() || (auth()->user()->isSalesStaff() && $task->assigned_user_id === auth()->id()))
+                                <li><a class="dropdown-item" href="#" onclick="editTask({{ $task->id }}); return false"><i class="fas fa-pen"></i> Edit</a></li>
+                                @endif
+                                @if(auth()->user()->isAdmin())
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteTask({{ $task->id }}, '{{ addslashes($task->title) }}'); return false"><i class="fas fa-trash"></i> Delete</a></li>
+                                @endif
+                            </ul>
                         </div>
                     </td>
                 </tr>
@@ -253,6 +262,24 @@
     </div>
 </div>
 
+<!-- View Modal -->
+<div class="modal fade crm-modal" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-eye me-2" style="color:var(--crm-info)"></i>Task details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="viewTaskBody" class="row g-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-crm-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Modal -->
 <div class="modal fade crm-modal" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -278,9 +305,43 @@ let deleteId = null;
 function openModal(id) { new bootstrap.Modal(document.getElementById(id)).show(); }
 
 async function toggleTask(id, btn) {
-    const res = await fetch(`${BASE.replace('/tasks','')}/../admin/tasks/${id}/toggle`, { method:'PATCH', headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json'} });
+    const res = await fetch(`${BASE}/${id}/toggle`, { method:'PATCH', headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json'} });
     const json = await res.json();
     if (json.success) { showToast('Task updated', 'success'); setTimeout(() => location.reload(), 500); }
+}
+
+async function viewTask(id) {
+    const res = await fetch(`${BASE}/${id}`);
+    const t = await res.json();
+    const container = document.getElementById('viewTaskBody');
+    container.innerHTML = `
+        <div class="col-md-6">
+            <div class="crm-card" style="padding:18px;">
+                <h6 style="font-weight:700;margin-bottom:.75rem">Task info</h6>
+                <div style="font-size:14px;color:#334155"><strong>Title:</strong> ${t.title}</div>
+                <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Status:</strong> ${t.status ? t.status.replace('_',' ') : '—'}</div>
+                <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Priority:</strong> ${t.priority ? t.priority.charAt(0).toUpperCase() + t.priority.slice(1) : '—'}</div>
+                <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Due:</strong> ${t.due_date ? t.due_date : '—'}</div>
+                <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Value:</strong> ${t.value ?? '—'}</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="crm-card" style="padding:18px;">
+                <h6 style="font-weight:700;margin-bottom:.75rem">Related</h6>
+                <div style="font-size:14px;color:#334155"><strong>Contact:</strong> ${t.contact ? t.contact.full_name : '—'}</div>
+                <div style="font-size:14px;color:#334155;margin-top:.5rem"><strong>Lead:</strong> ${t.lead ? t.lead.title : '—'}</div>
+                <div style="font-size:14px;color:#334155;margin-top:.5rem"><strong>Deal:</strong> ${t.deal ? t.deal.title : '—'}</div>
+                <div style="font-size:14px;color:#334155;margin-top:.5rem"><strong>Assigned:</strong> ${t.assigned_user ? t.assigned_user.name : '—'}</div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="crm-card" style="padding:18px;">
+                <h6 style="font-weight:700;margin-bottom:.75rem">Notes</h6>
+                <div style="font-size:14px;color:#475569;white-space:pre-wrap">${t.description || 'No details added.'}</div>
+            </div>
+        </div>
+    `;
+    openModal('viewModal');
 }
 
 async function submitAdd() {

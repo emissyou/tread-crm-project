@@ -12,29 +12,38 @@ class UserSeeder extends Seeder
     {
         User::updateOrCreate([
             'email' => 'admin@treadcrm.com'
-        ],[
-            'name' => 'Admin',
+        ], [
+            'name'     => 'Admin',
             'password' => Hash::make('password'),
-            'role' => 'admin',
-            'is_active' => true
+            'role'     => 'admin',
+            // removed is_active
+        ]);
+
+        User::updateOrCreate([
+            'email' => 'manager@treadcrm.com'
+        ], [
+            'name'     => 'Manager',
+            'password' => Hash::make('password'),
+            'role'     => 'manager',
+            // removed is_active
         ]);
 
         User::updateOrCreate([
             'email' => 'sarah@treadcrm.com'
-        ],[
-            'name' => 'Sarah Mitchell',
+        ], [
+            'name'     => 'Sarah Mitchell',
             'password' => Hash::make('password'),
-            'role' => 'agent',
-            'is_active' => true
+            'role'     => 'sales_staff',
+            // removed is_active
         ]);
 
         User::updateOrCreate([
             'email' => 'james@treadcrm.com'
-        ],[
-            'name' => 'James Carter',
+        ], [
+            'name'     => 'James Carter',
             'password' => Hash::make('password'),
-            'role' => 'agent',
-            'is_active' => true
+            'role'     => 'sales_staff',
+            // removed is_active
         ]);
     }
 }

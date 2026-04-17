@@ -34,7 +34,7 @@ class DealController extends Controller
         $contacts  = Contact::orderBy('first_name')->get();
         $companies = Company::orderBy('name')->get();
         $leads     = Lead::orderBy('title')->get();
-        $users     = User::where('is_active', true)->orderBy('name')->get();
+        $users     = User::orderBy('name')->get();
 
         $stats = [
             'total'       => Deal::count(),

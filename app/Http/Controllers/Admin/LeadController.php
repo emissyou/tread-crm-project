@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
-use App\Models\Contact;
-use App\Models\Company;
 use App\Models\User;
+use App\Models\Customer; // Add this import
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -14,14 +13,15 @@ class LeadController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Lead::with(['contact', 'company', 'assignedUser']);
+        $query = Lead::with(['customer', 'assignedUser']);
 
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
-                $q->where('title', 'like', "%{$s}%")
+                $q->where('name', 'like', "%{$s}%")
+                  ->orWhere('email', 'like', "%{$s}%")
                   ->orWhere('source', 'like', "%{$s}%")
-                  ->orWhereHas('contact', fn($q2) => $q2->where('first_name', 'like', "%{$s}%")->orWhere('last_name', 'like', "%{$s}%"));
+                  ->orWhereHas('customer', fn($q2) => $q2->where('first_name', 'like', "%{$s}%")->orWhere('last_name', 'like', "%{$s}%"));
             });
         }
 
@@ -34,9 +34,7 @@ class LeadController extends Controller
         }
 
         $leads    = $query->latest()->paginate(10)->withQueryString();
-        $contacts = Contact::orderBy('first_name')->get();
-        $companies = Company::orderBy('name')->get();
-        $users    = User::where('is_active', true)->orderBy('name')->get();
+        $users    = User::orderBy('name')->get();
 
         $stats = [
             'total'       => Lead::count(),
@@ -47,22 +45,25 @@ class LeadController extends Controller
             'lost'        => Lead::where('status', 'lost')->count(),
         ];
 
-        return view('admin.leads.index', compact('leads', 'contacts', 'companies', 'users', 'stats'));
+        return view('admin.leads.index', compact('leads', 'users', 'stats'));
     }
 
     public function store(Request $request)
     {
+        // ❌ REMOVE THIS LINE:
+        // dd("test");
+
         $validator = Validator::make($request->all(), [
-            'title'          => 'required|string|max:200',
-            'contact_id'     => 'nullable|exists:contacts,id',
-            'company_id'     => 'nullable|exists:companies,id',
-            'source'         => 'nullable|string|max:100',
-            'status'         => 'required|in:new,contacted,negotiating,closed,lost',
-            'priority'       => 'required|in:low,medium,high',
-            'value'          => 'nullable|numeric|min:0',
-            'notes'          => 'nullable|string',
-            'follow_up_date' => 'nullable|date',
-            'assigned_to'    => 'nullable|exists:users,id',
+            'name'            => 'required|string|max:200',
+            'email'           => 'nullable|email|max:100',
+            'phone'           => 'nullable|string|max:20',
+            'customer_id'     => 'nullable|exists:customers,id',
+            'source'          => 'nullable|string|max:100',
+            'status'          => 'required|in:new,contacted,negotiating,closed,lost',
+            'priority'        => 'required|in:low,medium,high',
+            'expected_value'  => 'nullable|numeric|min:0',
+            'notes'           => 'nullable|string',
+            'assigned_user_id' => 'nullable|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -70,18 +71,18 @@ class LeadController extends Controller
         }
 
         $lead = Lead::create($request->all());
-        $lead->load(['contact', 'company', 'assignedUser']);
+        $lead->load(['customer', 'assignedUser']);
 
         return response()->json([
-            'success' => true,
             'message' => 'Lead created successfully.',
             'lead'    => $lead,
         ]);
     }
 
+
     public function show(Lead $lead)
     {
-        $lead->load(['contact', 'company', 'assignedUser', 'deals', 'tasks']);
+        $lead->load(['customer', 'assignedUser']);
         return response()->json($lead);
     }
 
@@ -93,16 +94,16 @@ class LeadController extends Controller
     public function update(Request $request, Lead $lead)
     {
         $validator = Validator::make($request->all(), [
-            'title'          => 'required|string|max:200',
-            'contact_id'     => 'nullable|exists:contacts,id',
-            'company_id'     => 'nullable|exists:companies,id',
-            'source'         => 'nullable|string|max:100',
-            'status'         => 'required|in:new,contacted,negotiating,closed,lost',
-            'priority'       => 'required|in:low,medium,high',
-            'value'          => 'nullable|numeric|min:0',
-            'notes'          => 'nullable|string',
-            'follow_up_date' => 'nullable|date',
-            'assigned_to'    => 'nullable|exists:users,id',
+            'name'            => 'required|string|max:200',
+            'email'           => 'nullable|email|max:100',
+            'phone'           => 'nullable|string|max:20',
+            'customer_id'     => 'nullable|exists:customers,id',
+            'source'          => 'nullable|string|max:100',
+            'status'          => 'required|in:new,contacted,negotiating,closed,lost',
+            'priority'        => 'required|in:low,medium,high',
+            'expected_value'  => 'nullable|numeric|min:0',
+            'notes'           => 'nullable|string',
+            'assigned_user_id' => 'nullable|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -114,7 +115,7 @@ class LeadController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Lead updated successfully.',
-            'lead'    => $lead->fresh()->load(['contact', 'company', 'assignedUser']),
+            'lead'    => $lead->fresh()->load(['customer', 'assignedUser']),
         ]);
     }
 

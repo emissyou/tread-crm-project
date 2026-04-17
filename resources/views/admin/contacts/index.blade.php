@@ -1,6 +1,6 @@
-@extends('layouts.app')
-@section('title', 'Contacts')
-@section('breadcrumb', 'Contacts')
+<!-- @extends('layouts.app')
+@section('title', 'Customers')
+@section('breadcrumb', 'Customers')
 
 @section('content')
 
@@ -340,20 +340,22 @@
 .cx-s-inactive { background: #f1f5f9; color: #64748b; }
 
 /* ─── Action icon buttons ─── */
-.cx-actions { display: flex; gap: 4px; justify-content: flex-end; }
+.cx-actions { display: inline-flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .cx-icon-btn {
-    width: 30px; height: 30px;
-    border-radius: var(--cx-r);
+    width: 36px; height: 36px;
+    border-radius: 14px;
     border: 1.5px solid var(--cx-border);
     background: var(--cx-surface);
     color: var(--cx-faint);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; cursor: pointer;
-    transition: all .12s;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; cursor: pointer;
+    transition: all .15s ease;
 }
-.cx-icon-btn:hover { transform: translateY(-1px); }
-.cx-icon-btn.edit:hover { background: var(--cx-blue-bg); border-color: #93c5fd; color: var(--cx-blue); }
-.cx-icon-btn.del:hover  { background: var(--cx-red-bg);  border-color: #fca5a5; color: var(--cx-red); }
+.cx-icon-btn:hover { transform: translateY(-1px); border-color: #cbd5e1; }
+.cx-icon-btn.edit { color: #2563eb; }
+.cx-icon-btn.edit:hover { background: rgba(37,99,235,.08); border-color: #93c5fd; }
+.cx-icon-btn.del { color: #dc2626; }
+.cx-icon-btn.del:hover  { background: rgba(239,68,68,.1); border-color: #fca5a5; }
 
 /* ─── Table footer ─── */
 .cx-table-footer {
@@ -495,15 +497,15 @@
     {{-- ── Page Header ── --}}
     <div class="cx-header">
         <div class="cx-header-left">
-            <h1><i class="fas fa-users"></i> Contacts</h1>
-            <p>Manage your customers, leads, and prospects</p>
+            <h1><i class="fas fa-users"></i> Customers</h1>
+            <p>Manage your customers, leads, and prospects from one dashboard.</p>
         </div>
         <div class="cx-header-actions">
             <a href="{{ route('admin.contacts.export') }}" class="cx-btn cx-btn-ghost">
-                <i class="fas fa-file-arrow-down"></i> Export CSV
+                <i class="fas fa-file-arrow-down"></i> Export Customers
             </a>
             <button class="cx-btn cx-btn-primary" onclick="openModal('addModal')">
-                <i class="fas fa-plus"></i> New Contact
+                <i class="fas fa-plus"></i> New Customer
             </button>
         </div>
     </div>
@@ -511,10 +513,10 @@
     {{-- ── Stat Cards ── --}}
     @php
     $statItems = [
-        ['label'=>'Total Contacts','value'=>$stats['total'],    'icon'=>'fa-users',      'color'=>'#2563eb','bg'=>'#dbeafe'],
-        ['label'=>'Customers',     'value'=>$stats['customer'], 'icon'=>'fa-user-check', 'color'=>'#059669','bg'=>'#d1fae5'],
-        ['label'=>'Leads',         'value'=>$stats['lead'],     'icon'=>'fa-bullseye',   'color'=>'#d97706','bg'=>'#fef9c3'],
-        ['label'=>'Prospects',     'value'=>$stats['prospect'], 'icon'=>'fa-user-clock', 'color'=>'#7c3aed','bg'=>'#ede9fe'],
+        ['label'=>'Total Customers','value'=>$stats['total'],    'icon'=>'fa-users',      'color'=>'#2563eb','bg'=>'#dbeafe'],
+        ['label'=>'Customers',      'value'=>$stats['customer'], 'icon'=>'fa-user-check', 'color'=>'#059669','bg'=>'#d1fae5'],
+        ['label'=>'Leads',          'value'=>$stats['lead'],     'icon'=>'fa-bullseye',   'color'=>'#d97706','bg'=>'#fef9c3'],
+        ['label'=>'Prospects',      'value'=>$stats['prospect'], 'icon'=>'fa-user-clock', 'color'=>'#7c3aed','bg'=>'#ede9fe'],
     ];
     @endphp
     <div class="cx-stats">
@@ -559,7 +561,7 @@
     <div class="cx-card">
         <div class="cx-card-head">
             <i class="fas fa-address-book" style="color:#2563eb;font-size:14px"></i>
-            <h5>All Contacts</h5>
+            <h5>All Customers</h5>
             <div class="spacer"></div>
             <span class="cx-badge-count">{{ $contacts->total() }} records</span>
         </div>
@@ -569,7 +571,7 @@
             <table class="cx-table">
                 <thead>
                     <tr>
-                        <th>Contact</th>
+                        <th>Customer</th>
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Company</th>
@@ -618,7 +620,7 @@
                                 {{ $contact->email }}
                             </a>
                         </td>
-                        <td class="cx-mono" style="color:#94a3b8">{{ $contact->phone ?? '—' }}</td>
+                        <td class="cx-mono" style="color:#94a3b8">{{ formatPhilippinePhone($contact->phone) }}</td>
                         <td style="font-size:13px;font-weight:500;color:#334155">{{ $contact->company ?? '—' }}</td>
                         <td><span class="cx-status {{ $badgeClass }}">{{ ucfirst($contact->status) }}</span></td>
                         <td style="font-size:12px;color:#94a3b8">
@@ -626,15 +628,18 @@
                         </td>
                         <td class="cx-mono" style="color:#94a3b8">{{ $contact->created_at->format('M d, Y') }}</td>
                         <td>
-                            <div class="cx-actions">
-                                <button class="cx-icon-btn edit" title="Edit"
-                                        onclick="editContact({{ $contact->id }})">
-                                    <i class="fas fa-pen"></i>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v"></i>
                                 </button>
-                                <button class="cx-icon-btn del" title="Delete"
-                                        onclick="deleteContact({{ $contact->id }}, '{{ addslashes($contact->full_name) }}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ route('admin.contacts.show', $contact->id) }}"><i class="fas fa-eye"></i> View</a></li>
+                                    @if(auth()->user()->canManageCustomersAndLeads())
+                                    <li><a class="dropdown-item" href="#" onclick="editContact({{ $contact->id }}); return false"><i class="fas fa-pen"></i> Edit</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteCustomer({{ $contact->id }}, '{{ addslashes($contact->full_name) }}'); return false"><i class="fas fa-trash"></i> Delete</a></li>
+                                    @endif
+                                </ul>
                             </div>
                         </td>
                     </tr>
@@ -644,17 +649,17 @@
         </div>
 
         <div class="cx-table-footer">
-            <span>Showing <strong>{{ $contacts->firstItem() }}–{{ $contacts->lastItem() }}</strong> of <strong>{{ $contacts->total() }}</strong> contacts</span>
+            <span>Showing <strong>{{ $contacts->firstItem() }}–{{ $contacts->lastItem() }}</strong> of <strong>{{ $contacts->total() }}</strong> customers</span>
             {{ $contacts->links() }}
         </div>
 
         @else
         <div class="cx-empty">
             <div class="cx-empty-icon"><i class="fas fa-users"></i></div>
-            <h5>No contacts found</h5>
-            <p>Add your first contact or adjust the filters above.</p>
+            <h5>No customers found</h5>
+            <p>Add your first customer or adjust the filters above.</p>
             <button class="cx-btn cx-btn-primary" onclick="openModal('addModal')">
-                <i class="fas fa-plus"></i> Add Contact
+                <i class="fas fa-plus"></i> Add Customer
             </button>
         </div>
         @endif
@@ -667,7 +672,7 @@
                 <div class="modal-header">
                     <span class="modal-title">
                         <i class="fas fa-user-plus" style="color:#2563eb"></i>
-                        New Contact
+                        New Customer
                     </span>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -700,7 +705,7 @@
                             <div class="col-md-6">
                                 <div class="cx-field">
                                     <label class="cx-label">Phone</label>
-                                    <input type="text" name="phone" class="cx-field-input" placeholder="+1 555 000 0000">
+                                    <input type="text" name="phone" class="cx-field-input" placeholder="+63 9XX XXX XXXX">
                                 </div>
                             </div>
                             <div class="col-12"><div class="cx-form-section">Work Details</div></div>
@@ -752,7 +757,7 @@
                 <div class="modal-footer">
                     <button class="cx-btn cx-btn-ghost" data-bs-dismiss="modal">Cancel</button>
                     <button class="cx-btn cx-btn-primary" onclick="submitAdd()">
-                        <i class="fas fa-check"></i> Save Contact
+                        <i class="fas fa-check"></i> Save Customer
                     </button>
                 </div>
             </div>
@@ -766,7 +771,7 @@
                 <div class="modal-header">
                     <span class="modal-title">
                         <i class="fas fa-pen" style="color:#d97706"></i>
-                        Edit Contact
+                        Edit Customer
                     </span>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -849,7 +854,7 @@
                 <div class="modal-footer">
                     <button class="cx-btn cx-btn-ghost" data-bs-dismiss="modal">Cancel</button>
                     <button class="cx-btn cx-btn-primary" onclick="submitEdit()">
-                        <i class="fas fa-check"></i> Update Contact
+                        <i class="fas fa-check"></i> Update Customer
                     </button>
                 </div>
             </div>
@@ -863,7 +868,7 @@
                 <div class="modal-header">
                     <span class="modal-title" style="color:#dc2626">
                         <i class="fas fa-triangle-exclamation" style="color:#dc2626"></i>
-                        Delete Contact
+                        Delete Customer
                     </span>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -879,7 +884,7 @@
                 <div class="modal-footer">
                     <button class="cx-btn cx-btn-ghost" data-bs-dismiss="modal">Cancel</button>
                     <button class="cx-btn cx-btn-danger" onclick="confirmDelete()">
-                        <i class="fas fa-trash"></i> Delete
+                        <i class="fas fa-trash"></i> Delete Customer
                     </button>
                 </div>
             </div>
@@ -945,10 +950,29 @@ async function submitEdit() {
     } catch { showToast('Something went wrong.', 'error'); }
 }
 
-function deleteContact(id, name) {
+function deleteCustomer(id, name) {
     deleteId = id;
     document.getElementById('delete_name').textContent = name;
     openModal('deleteModal');
+}
+
+async function viewCustomer(id) {
+    try {
+        const res = await fetch(`${BASE}/${id}`);
+        const c   = await res.json();
+        document.getElementById('view_full_name').textContent = c.full_name;
+        document.getElementById('view_status').textContent = c.status.charAt(0).toUpperCase() + c.status.slice(1);
+        document.getElementById('view_email').textContent = c.email || '—';
+        document.getElementById('view_phone').textContent = c.phone || '—';
+        document.getElementById('view_company').textContent = c.company || '—';
+        document.getElementById('view_job_title').textContent = c.job_title || '—';
+        document.getElementById('view_location').textContent = [c.city, c.country].filter(Boolean).join(', ') || '—';
+        document.getElementById('view_created_at').textContent = new Date(c.created_at).toLocaleDateString();
+        document.getElementById('view_notes').textContent = c.notes || '—';
+        openModal('viewModal');
+    } catch {
+        showToast('Failed to load customer details.', 'error');
+    }
 }
 
 async function confirmDelete() {
@@ -981,4 +1005,4 @@ function showErrors(errors, formId, prefix) {
     });
 }
 </script>
-@endpush
+@endpush -->

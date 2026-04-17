@@ -16,8 +16,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'sarah.johnson@acme.com',
                 'phone'      => '+1-555-0101',
                 'company'    => 'Acme Corp',
-                'notes'      => 'Marketing lead from webinar',
                 'status'     => 'customer',
+                'notes'      => 'Marketing lead from webinar',
             ],
             [
                 'first_name' => 'Mike',
@@ -25,8 +25,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'mike.chen@techstart.com',
                 'phone'      => '+1-555-0202',
                 'company'    => 'TechStart Inc',
-                'notes'      => 'Interested in CRM demo',
                 'status'     => 'customer',
+                'notes'      => 'Interested in CRM demo',
             ],
             [
                 'first_name' => 'Emily',
@@ -34,8 +34,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'emily.davis@enterprise.com',
                 'phone'      => '+1-555-0303',
                 'company'    => 'Enterprise Solutions',
-                'notes'      => 'Signed contract last week',
                 'status'     => 'customer',
+                'notes'      => 'Signed contract last week',
             ],
             [
                 'first_name' => 'David',
@@ -43,8 +43,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'david.wilson@startup.io',
                 'phone'      => '+1-555-0404',
                 'company'    => 'Startup IO',
-                'notes'      => 'Free trial user',
                 'status'     => 'lead',
+                'notes'      => 'Free trial user',
             ],
             [
                 'first_name' => 'Lisa',
@@ -52,8 +52,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'lisa.martinez@proconsulting.com',
                 'phone'      => '+1-555-0505',
                 'company'    => 'Pro Consulting',
-                'notes'      => 'Repeat customer - upsell opportunity',
                 'status'     => 'customer',
+                'notes'      => 'Repeat customer - upsell opportunity',
             ],
             [
                 'first_name' => 'James',
@@ -61,8 +61,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'james.thompson@globaltrade.com',
                 'phone'      => '+1-555-0606',
                 'company'    => 'Global Trade Co',
-                'notes'      => 'Referred by Lisa Martinez',
                 'status'     => 'prospect',
+                'notes'      => 'Referred by Lisa Martinez',
             ],
             [
                 'first_name' => 'Anna',
@@ -70,8 +70,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'anna.lee@healthplus.com',
                 'phone'      => '+1-555-0707',
                 'company'    => 'HealthPlus',
-                'notes'      => 'Attended trade show booth',
                 'status'     => 'lead',
+                'notes'      => 'Attended trade show booth',
             ],
             [
                 'first_name' => 'Robert',
@@ -79,8 +79,8 @@ class ContactSeeder extends Seeder
                 'email'      => 'robert.brown@edutech.com',
                 'phone'      => '+1-555-0808',
                 'company'    => 'EduTech Solutions',
-                'notes'      => 'Requested pricing sheet',
                 'status'     => 'prospect',
+                'notes'      => 'Requested pricing sheet',
             ],
         ];
 

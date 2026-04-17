@@ -1,13 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\ContactController;
+use App\Http\Controllers\Admin\CustomerController;use App\Http\Controllers\Admin\ReportController;use App\Http\Controllers\Admin\FollowUpController;
+use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\CompanyController;
-use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\DealController;
 use App\Http\Controllers\Admin\TaskController;
-use App\Http\Controllers\Admin\CalendarController;
-use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\LeadController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -33,177 +32,89 @@ Route::post('/logout', function () {
 })->name('logout');
 
 // Admin Routes
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        // Dashboard
-        Route::get('/dashboard', function () {
-            $now          = \Carbon\Carbon::now();
-            $thisMonth    = $now->copy()->startOfMonth();
-            $lastMonth    = $now->copy()->subMonth()->startOfMonth();
-            $lastMonthEnd = $now->copy()->subMonth()->endOfMonth();
 
-            // ── Helper closure for growth % ───────────────────────────────────
-            $growth = function (int $old, int $new): int {
-                if ($old === 0) return $new > 0 ? 100 : 0;
-                return (int) round((($new - $old) / $old) * 100);
-            };
 
-            // ── Summary Counts ────────────────────────────────────────────────
-            $totalContacts     = \App\Models\Contact::count();
-            $contactsLastMonth = \App\Models\Contact::whereBetween('created_at', [$lastMonth, $lastMonthEnd])->count();
-            $contactsThisMonth = \App\Models\Contact::where('created_at', '>=', $thisMonth)->count();
 
-            $totalLeads     = \App\Models\Lead::count();
-            $leadsLastMonth = \App\Models\Lead::whereBetween('created_at', [$lastMonth, $lastMonthEnd])->count();
-            $leadsThisMonth = \App\Models\Lead::where('created_at', '>=', $thisMonth)->count();
+        Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
-            $totalDeals     = \App\Models\Deal::count();
-            $dealsLastMonth = \App\Models\Deal::whereBetween('created_at', [$lastMonth, $lastMonthEnd])->count();
-            $dealsThisMonth = \App\Models\Deal::where('created_at', '>=', $thisMonth)->count();
+        // Reports - All authenticated users can view
+        Route::get('/reports', [ReportController::class, 'index'])->middleware('sales_staff')->name('reports.index');
 
-            $totalRevenue     = \App\Models\Deal::where('stage', 'closed_won')->sum('value');
-            $revenueLastMonth = \App\Models\Deal::where('stage', 'closed_won')
-                                    ->whereBetween('updated_at', [$lastMonth, $lastMonthEnd])->sum('value');
-            $revenueThisMonth = \App\Models\Deal::where('stage', 'closed_won')
-                                    ->where('updated_at', '>=', $thisMonth)->sum('value');
+        // Customers - Admin and Manager can manage, Sales Staff can view
+        Route::get('/customers', [CustomerController::class, 'index'])->middleware('sales_staff')->name('customers.index');
+        Route::get('/customers/export', [CustomerController::class, 'exportCsv'])->middleware('manager')->name('customers.export');
+        Route::get('/customers/create', [CustomerController::class, 'create'])->middleware('manager')->name('customers.create');
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('sales_staff')->name('customers.show');
+        Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->middleware('manager')->name('customers.edit');
+        Route::post('/customers', [CustomerController::class, 'store'])->middleware('manager')->name('customers.store');
+        Route::patch('/customers/{customer}', [CustomerController::class, 'update'])->middleware('manager')->name('customers.update');
+        Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->middleware('manager')->name('customers.destroy');
+        
 
-            $stats = [
-                'totalContacts'  => $totalContacts,
-                'contactsGrowth' => $growth($contactsLastMonth, $contactsThisMonth),
-                'totalLeads'     => $totalLeads,
-                'leadsGrowth'    => $growth($leadsLastMonth, $leadsThisMonth),
-                'totalDeals'     => $totalDeals,
-                'dealsGrowth'    => $growth($dealsLastMonth, $dealsThisMonth),
-                'totalRevenue'   => $totalRevenue,
-                'revenueGrowth'  => $growth((int) $revenueLastMonth, (int) $revenueThisMonth),
-            ];
+        // Companies - Admin and Manager only
+        Route::get('/companies', [CompanyController::class, 'index'])->middleware('manager')->name('companies.index');
+        Route::post('/companies', [CompanyController::class, 'store'])->middleware('manager')->name('companies.store');
+        Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('manager')->name('companies.show');
+        Route::patch('/companies/{company}', [CompanyController::class, 'update'])->middleware('manager')->name('companies.update');
+        Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('manager')->name('companies.destroy');
 
-            // ── Leads Pipeline ────────────────────────────────────────────────
-            $stageCounts = \App\Models\Lead::select('status', \Illuminate\Support\Facades\DB::raw('count(*) as count'))
-                               ->groupBy('status')
-                               ->pluck('count', 'status')
-                               ->toArray();
 
-            $closedLeads    = $stageCounts['closed'] ?? 0;
-            $conversionRate = $totalLeads > 0 ? round(($closedLeads / $totalLeads) * 100) : 0;
+        // ==================== LEADS ROUTES - FIXED ====================
+        Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+        Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+        Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
+        Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
+        Route::patch('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
 
-            $pipeline = [
-                'conversionRate' => $conversionRate,
-                'closedLeads'    => $closedLeads,
-                'stages'         => collect(['new', 'contacted', 'negotiating', 'closed', 'lost'])
-                                        ->map(fn ($s) => ['status' => $s, 'count' => $stageCounts[$s] ?? 0])
-                                        ->all(),
-            ];
+        // Deals - Admin and Manager only
+        Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage'])->middleware('manager')->name('deals.updateStage');
+        Route::get('/deals', [DealController::class, 'index'])->middleware('manager')->name('deals.index');
+        Route::post('/deals', [DealController::class, 'store'])->middleware('manager')->name('deals.store');
+        Route::get('/deals/{deal}', [DealController::class, 'show'])->middleware('manager')->name('deals.show');
+        Route::patch('/deals/{deal}', [DealController::class, 'update'])->middleware('manager')->name('deals.update');
+        Route::delete('/deals/{deal}', [DealController::class, 'destroy'])->middleware('manager')->name('deals.destroy');
 
-            // ── Monthly Revenue Chart (last 6 months) ─────────────────────────
-            // FIX: use created_at instead of updated_at so seeded historical
-            //      dates are matched correctly by month
-            $chartLabels = [];
-            $chartValues = [];
-            for ($i = 5; $i >= 0; $i--) {
-                $date          = $now->copy()->subMonths($i);
-                $chartLabels[] = $date->format('M Y');
-                $chartValues[] = (float) \App\Models\Deal::where('stage', 'closed_won')
-                                             ->whereYear('created_at', $date->year)
-                                             ->whereMonth('created_at', $date->month)
-                                             ->sum('value');
-            }
-            $chartData = ['labels' => $chartLabels, 'values' => $chartValues];
+        // Tasks - All roles
+        Route::patch('/tasks/{task}/toggle', [TaskController::class, 'toggleComplete'])->middleware('sales_staff')->name('tasks.toggle');
+        Route::get('/tasks', [TaskController::class, 'index'])->middleware('sales_staff')->name('tasks.index');
+        Route::post('/tasks', [TaskController::class, 'store'])->middleware('sales_staff')->name('tasks.store');
+        Route::get('/tasks/{task}', [TaskController::class, 'show'])->middleware('sales_staff')->name('tasks.show');
+        Route::patch('/tasks/{task}', [TaskController::class, 'update'])->middleware('sales_staff')->name('tasks.update');
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->middleware('sales_staff')->name('tasks.destroy');
 
-            // ── Recent Activities ─────────────────────────────────────────────
-            $recentContacts = \App\Models\Contact::select('id', 'first_name', 'last_name', 'created_at')
-                                 ->latest()->take(3)->get()
-                                 ->map(fn ($c) => [
-                                     'title'      => 'New contact added',
-                                     'subtitle'   => trim($c->first_name . ' ' . $c->last_name),
-                                     'time'       => $c->created_at,
-                                     'icon'       => 'fas fa-user-plus',
-                                     'iconBg'     => 'bg-success bg-opacity-20 text-success',
-                                     'badge'      => 'Contact',
-                                     'badgeClass' => 'bg-success',
-                                 ]);
+        // Follow-ups - All roles
+        Route::patch('/follow-ups/{followUp}/toggle', [FollowUpController::class, 'toggleComplete'])->middleware('sales_staff')->name('follow-ups.toggle');
+        Route::get('/follow-ups', [FollowUpController::class, 'index'])->middleware('sales_staff')->name('follow-ups.index');
+        Route::post('/follow-ups', [FollowUpController::class, 'store'])->middleware('sales_staff')->name('follow-ups.store');
+        Route::get('/follow-ups/{followUp}', [FollowUpController::class, 'show'])->middleware('sales_staff')->name('follow-ups.show');
+        Route::patch('/follow-ups/{followUp}', [FollowUpController::class, 'update'])->middleware('sales_staff')->name('follow-ups.update');
+        Route::delete('/follow-ups/{followUp}', [FollowUpController::class, 'destroy'])->middleware('sales_staff')->name('follow-ups.destroy');
 
-            $recentLeads = \App\Models\Lead::select('id', 'title', 'created_at')
-                   ->latest()->take(3)->get()
-                   ->map(fn ($l) => [
-                       'title'      => 'New lead created',
-                       'subtitle'   => $l->title,
-                       'time'       => $l->created_at,
-                       'icon'       => 'fas fa-bullseye',
-                       'iconBg'     => 'bg-primary bg-opacity-20 text-primary',
-                       'badge'      => 'Lead',
-                       'badgeClass' => 'bg-warning',
-                   ]);
+        // Activities - All roles
+        Route::get('/activities/customer/{customer}', [ActivityController::class, 'getForCustomer'])->middleware('sales_staff')->name('activities.customer');
+        Route::get('/activities/lead/{lead}', [ActivityController::class, 'getForLead'])->middleware('sales_staff')->name('activities.lead');
+        Route::get('/activities', [ActivityController::class, 'index'])->middleware('sales_staff')->name('activities.index');
+        Route::post('/activities', [ActivityController::class, 'store'])->middleware('sales_staff')->name('activities.store');
+        Route::get('/activities/{activity}', [ActivityController::class, 'show'])->middleware('sales_staff')->name('activities.show');
+        Route::patch('/activities/{activity}', [ActivityController::class, 'update'])->middleware('sales_staff')->name('activities.update');
+        Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->middleware('sales_staff')->name('activities.destroy');
 
-            $recentDeals = \App\Models\Deal::select('id', 'title', 'value', 'created_at')
-                               ->where('stage', 'closed_won')
-                               ->latest()->take(3)->get()
-                               ->map(fn ($d) => [
-                                   'title'      => 'Deal won',
-                                   'subtitle'   => '$' . number_format($d->value) . ' • ' . $d->title,
-                                   'time'       => $d->created_at,
-                                   'icon'       => 'fas fa-handshake',
-                                   'iconBg'     => 'bg-info bg-opacity-20 text-info',
-                                   'badge'      => '$' . number_format($d->value),
-                                   'badgeClass' => 'bg-success',
-                               ]);
+        // User management - Admin only
+        Route::middleware('admin')->group(function () {
+            Route::get('/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+            Route::post('/users', [App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+            Route::get('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+            Route::patch('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+            Route::delete('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+            Route::patch('/users/{user}/toggle-active', [App\Http\Controllers\Admin\UserController::class, 'toggleActive'])->name('users.toggle-active');
+        });
 
-            $recentActivities = $recentContacts
-                ->concat($recentLeads)
-                ->concat($recentDeals)
-                ->sortByDesc('time')
-                ->take(6)
-                ->values();
-
-            // ── Upcoming Tasks ────────────────────────────────────────────────
-            $upcomingTasks = \App\Models\Task::with(['contact', 'lead'])
-                                 ->where('status', '!=', 'completed')
-                                 ->where('due_date', '>=', now()->startOfDay())
-                                 ->orderBy('due_date')
-                                 ->take(5)
-                                 ->get();
-
-            // ── Top Contacts by Deal Value ─────────────────────────────────────
-            // FIX: removed ->with('company') — contacts table has no company_id FK,
-            //      only a plain 'company' string column. Use $contact->company directly.
-            $topContacts = \App\Models\Contact::withSum('deals', 'value')
-                               ->withCount('deals')
-                               ->having('deals_sum_value', '>', 0)
-                               ->orderByDesc('deals_sum_value')
-                               ->take(4)
-                               ->get();
-
-            return view('admin.dashboard', compact(
-                'stats', 'pipeline', 'chartData',
-                'recentActivities', 'upcomingTasks', 'topContacts'
-            ));
-        })->name('dashboard');
-
-        // Contacts
-        Route::get('/contacts/export', [ContactController::class, 'exportCsv'])->name('contacts.export');
-        Route::resource('/contacts', ContactController::class)->except(['create', 'edit']);
-
-        // Companies
-        Route::resource('/companies', CompanyController::class)->except(['create', 'edit']);
-
-        // Leads
-        Route::resource('/leads', LeadController::class)->except(['create', 'edit']);
-
-        // Deals
-        Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
-        Route::resource('/deals', DealController::class)->except(['create', 'edit']);
-
-        // Tasks
-        Route::patch('/tasks/{task}/toggle', [TaskController::class, 'toggleComplete'])->name('tasks.toggle');
-        Route::resource('/tasks', TaskController::class)->except(['create', 'edit']);
-
-        // Calendar
-        Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
-        Route::resource('/calendar', CalendarController::class)->except(['create', 'edit'])->parameters(['calendar' => 'calendarEvent']);
-
-        // Reports
-        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        // Settings - Admin only
+        Route::get('/settings', fn() => view('admin.settings.index'))->middleware('admin')->name('settings.index');
     });

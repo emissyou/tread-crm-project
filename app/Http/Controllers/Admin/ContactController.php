@@ -11,6 +11,7 @@ class ContactController extends Controller
 {
     public function index(Request $request)
     {
+        // Check if user can view contacts (all roles can)
         $query = Contact::query();
 
         if ($request->filled('search')) {
@@ -41,6 +42,11 @@ class ContactController extends Controller
 
     public function store(Request $request)
     {
+        // Check if user can manage customers and leads
+        if (!auth()->user()->canManageCustomersAndLeads()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:100',
             'last_name'  => 'required|string|max:100',
@@ -67,10 +73,15 @@ class ContactController extends Controller
         ]);
     }
 
-    public function show(Contact $contact)
+    public function show(Request $request, Contact $contact)
     {
         $contact->load(['leads', 'deals', 'tasks']);
-        return response()->json($contact);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($contact);
+        }
+
+        return view('admin.contacts.show', compact('contact'));
     }
 
     public function edit(Contact $contact)
@@ -80,6 +91,11 @@ class ContactController extends Controller
 
     public function update(Request $request, Contact $contact)
     {
+        // Check if user can manage customers and leads
+        if (!auth()->user()->canManageCustomersAndLeads()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:100',
             'last_name'  => 'required|string|max:100',
@@ -108,12 +124,22 @@ class ContactController extends Controller
 
     public function destroy(Contact $contact)
     {
+        // Check if user can manage customers and leads
+        if (!auth()->user()->canManageCustomersAndLeads()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $contact->delete();
         return response()->json(['success' => true, 'message' => 'Contact deleted successfully.']);
     }
 
     public function exportCsv()
     {
+        // Check if user can manage customers and leads (for export)
+        if (!auth()->user()->canManageCustomersAndLeads()) {
+            abort(403, 'Unauthorized');
+        }
+
         $contacts = Contact::all();
         $filename = 'contacts_' . now()->format('Y_m_d') . '.csv';
 

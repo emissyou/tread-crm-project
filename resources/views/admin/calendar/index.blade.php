@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Calendar')
-@section('breadcrumb', 'Calendar')
+@section('title', 'Follow-ups')
+@section('breadcrumb', 'Follow-ups')
 
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet">
@@ -26,11 +26,11 @@
 @section('content')
 <div class="page-header">
     <div class="page-header-left">
-        <h1 class="page-title"><i class="fas fa-calendar-alt me-2" style="color:var(--crm-purple)"></i>Calendar</h1>
-        <p class="page-subtitle">Schedule meetings, calls, and follow-ups</p>
+        <h1 class="page-title"><i class="fas fa-calendar-alt me-2" style="color:var(--crm-purple)"></i>Follow-ups</h1>
+        <p class="page-subtitle">Schedule meetings, calls, and follow-ups in one place</p>
     </div>
     <button class="btn-crm-primary" onclick="openAddModal()">
-        <i class="fas fa-plus"></i> New Event
+        <i class="fas fa-plus"></i> New Follow-up
     </button>
 </div>
 
@@ -86,7 +86,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="eventModalTitle"><i class="fas fa-calendar-plus me-2" style="color:var(--crm-purple)"></i>New Event</h5>
+                <h5 class="modal-title" id="eventModalTitle"><i class="fas fa-calendar-plus me-2" style="color:var(--crm-purple)"></i>New Follow-up</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

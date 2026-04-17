@@ -85,7 +85,7 @@
                             @php $sb=['prospecting'=>'secondary','qualification'=>'info','proposal'=>'primary','negotiation'=>'warning','closed_won'=>'success','closed_lost'=>'danger'][$deal->stage]??'secondary'; @endphp
                             <span class="badge-crm badge-{{ $sb }}">{{ ucwords(str_replace('_',' ',$deal->stage)) }}</span>
                         </td>
-                        <td style="font-weight:700;color:var(--crm-success)">${{ number_format($deal->value) }}</td>
+                        <td style="font-weight:700;color:var(--crm-success)">₱{{ number_format($deal->value) }}</td>
                         <td>
                             <div style="display:flex;align-items:center;gap:8px">
                                 <div style="flex:1;height:4px;background:var(--crm-border);border-radius:4px">
@@ -99,11 +99,19 @@
                         </td>
                         <td style="font-size:12px">{{ $deal->assignedUser?->name ?? '—' }}</td>
                         <td>
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-sm" style="background:rgba(59,130,246,.12);color:#3b82f6;border:none;border-radius:6px;padding:4px 10px"
-                                    onclick="editDeal({{ $deal->id }})"><i class="fas fa-pen"></i></button>
-                                <button class="btn btn-sm" style="background:rgba(239,68,68,.12);color:#ef4444;border:none;border-radius:6px;padding:4px 10px"
-                                    onclick="deleteDeal({{ $deal->id }}, '{{ addslashes($deal->title) }}')"><i class="fas fa-trash"></i></button>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    @if(auth()->user()->isAdminOrManager())
+                                    <li><a class="dropdown-item" href="#" onclick="editDeal({{ $deal->id }}); return false"><i class="fas fa-pen"></i> Edit</a></li>
+                                    @endif
+                                    @if(auth()->user()->isAdmin())
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteDeal({{ $deal->id }}, '{{ addslashes($deal->title) }}'); return false"><i class="fas fa-trash"></i> Delete</a></li>
+                                    @endif
+                                </ul>
                             </div>
                         </td>
                     </tr>
@@ -159,7 +167,7 @@
                             <div style="font-size:11px;color:var(--crm-muted)">{{ $deal->contact->full_name }}</div>
                         @endif
                         <div style="margin-top:8px;font-size:13px;font-weight:700;color:{{ $stageInfo['color'] }}">
-                            ${{ number_format($deal->value) }}
+                            ₱{{ number_format($deal->value) }}
                         </div>
                         <div style="margin-top:6px;height:3px;background:var(--crm-border);border-radius:3px">
                             <div style="width:{{ $deal->probability }}%;height:100%;background:{{ $stageInfo['color'] }};border-radius:3px;transition:width .3s"></div>

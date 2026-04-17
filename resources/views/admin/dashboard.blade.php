@@ -1,5 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Dashboard - Tread CRM')
+@section('page_title', 'Dashboard')
+@section('page_subtitle', 'Welcome back to your CRM control center.')
 
 @push('styles')
 <style>
@@ -12,26 +14,14 @@
 <div class="container-fluid py-4">
 
     {{-- ─── Welcome Header ──────────────────────────────────────────────── --}}
-    <div class="row mb-5">
-        <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <h1 class="h2 fw-bold mb-1">
-                        <i class="fas fa-chart-line text-primary me-2"></i>Dashboard
-                    </h1>
-                    <p class="text-muted mb-0">
-                        Welcome back, {{ auth()->user()->name }}! Here's what's happening with your CRM.
-                    </p>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-sync-alt me-1"></i>Refresh
-                    </a>
-                    <a href="{{ route('admin.leads.store') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i>New Lead
-                    </a>
-                </div>
-            </div>
+    <div class="page-header mb-5">
+        <div class="page-header-left">
+            <h1 class="page-title"><i class="fas fa-chart-line me-2 text-primary"></i>Dashboard</h1>
+            <p class="page-subtitle">Welcome back, {{ auth()->user()->name }}! Here's what's happening with your CRM.</p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ route('admin.dashboard') }}" class="btn-crm-secondary"><i class="fas fa-sync-alt"></i> Refresh</a>
+            <a href="{{ route('admin.leads.index') }}" class="btn-crm-primary"><i class="fas fa-plus"></i> New Lead</a>
         </div>
     </div>
 
@@ -46,15 +36,15 @@
                                 d-flex align-items-center justify-content-center" style="width:70px;height:70px;">
                         <i class="fas fa-users fa-lg"></i>
                     </div>
-                    <h3 class="h2 fw-bold text-success mb-1">{{ number_format($stats['totalContacts']) }}</h3>
-                    <p class="text-muted mb-2">Total Contacts</p>
-                    @if($stats['contactsGrowth'] >= 0)
+                    <h3 class="h2 fw-bold text-success mb-1">{{ number_format($stats['totalCustomers']) }}</h3>
+                    <p class="text-muted mb-2">Total Customers</p>
+                    @if($stats['customersGrowth'] >= 0)
                         <small class="stat-change-up fw-semibold">
-                            <i class="fas fa-arrow-up me-1"></i>{{ $stats['contactsGrowth'] }}% from last month
+                            <i class="fas fa-arrow-up me-1"></i>{{ $stats['customersGrowth'] }}% from last month
                         </small>
                     @else
                         <small class="stat-change-down fw-semibold">
-                            <i class="fas fa-arrow-down me-1"></i>{{ abs($stats['contactsGrowth']) }}% from last month
+                            <i class="fas fa-arrow-down me-1"></i>{{ abs($stats['customersGrowth']) }}% from last month
                         </small>
                     @endif
                 </div>
@@ -116,7 +106,7 @@
                         <i class="fas fa-dollar-sign fa-lg"></i>
                     </div>
                     <h3 class="h2 fw-bold text-primary mb-2">
-                        ${{ number_format($stats['totalRevenue'], 0) }}
+                        ₱{{ number_format($stats['totalRevenue'], 0) }}
                     </h3>
                     <p class="text-muted mb-2">Total Revenue</p>
                     @if($stats['revenueGrowth'] >= 0)
@@ -285,12 +275,12 @@
                                 <div>
                                     <h6 class="mb-1">{{ $task->title }}</h6>
                                     <small class="text-muted">
-                                        @if($task->contact)
-                                            {{ $task->contact->first_name }} {{ $task->contact->last_name }}
+                                        @if($task->customer)
+                                            {{ $task->customer->first_name }} {{ $task->customer->last_name }}
                                         @elseif($task->lead)
                                             {{ $task->lead->name }}
                                         @else
-                                            No contact
+                                            No customer
                                         @endif
                                     </small>
                                 </div>
@@ -314,32 +304,32 @@
             <div class="card card-tread border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0 fw-semibold">
-                        <i class="fas fa-star me-2 text-warning"></i>Top Contacts by Deal Value
+                        <i class="fas fa-star me-2 text-warning"></i>Top Customers by Deal Value
                     </h5>
-                    <a href="{{ route('admin.contacts.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    <a href="{{ route('admin.customers.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         @php
                             $avatarColors = ['bg-primary','bg-success','bg-warning','bg-info'];
                         @endphp
-                        @forelse($topContacts as $i => $contact)
+                        @forelse($topCustomers as $i => $customer)
                         <div class="col-md-6 col-lg-3">
                             <div class="card h-100 border-0 bg-light">
                                 <div class="card-body text-center p-4">
                                     <div class="avatar {{ $avatarColors[$i % 4] }} text-white rounded-circle
                                                 mx-auto mb-3 d-flex align-items-center justify-content-center fw-bold"
                                          style="width:60px;height:60px;">
-                                        {{ strtoupper(substr($contact->first_name,0,1) . substr($contact->last_name,0,1)) }}
+                                        {{ strtoupper(substr($customer->first_name,0,1) . substr($customer->last_name,0,1)) }}
                                     </div>
-                                    <h6 class="fw-bold mb-1">{{ $contact->first_name }} {{ $contact->last_name }}</h6>
-                                    <p class="text-muted small mb-2">{{ optional($contact->company)->name ?? '—' }}</p>
+                                    <h6 class="fw-bold mb-1">{{ $customer->first_name }} {{ $customer->last_name }}</h6>
+                                    <p class="text-muted small mb-2">{{ $customer->company ?? '—' }}</p>
                                     <div class="h6 fw-bold text-primary mb-1">
-                                        ${{ number_format($contact->deals_sum_value ?? 0) }}
+                                        ₱{{ number_format($customer->deals_sum_value ?? 0) }}
                                     </div>
                                     <small class="text-success">
-                                        {{ $contact->deals_count ?? 0 }}
-                                        {{ Str::plural('deal', $contact->deals_count ?? 0) }}
+                                        {{ $customer->deals_count ?? 0 }}
+                                        {{ Str::plural('deal', $customer->deals_count ?? 0) }}
                                     </small>
                                 </div>
                             </div>

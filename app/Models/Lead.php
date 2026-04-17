@@ -4,36 +4,61 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Lead extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
-        'title', 'contact_id', 'company_id', 'source',
-        'status', 'priority', 'value', 'notes',
-        'follow_up_date', 'assigned_to',
+        'customer_id',
+        'name',
+        'email',
+        'phone',
+        'source',
+        'status',
+        'priority',
+        'expected_value',
+        'notes',
+        'assigned_user_id',
     ];
 
     protected $casts = [
-        'follow_up_date' => 'date',
-        'value' => 'decimal:2',
+        'expected_value' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    public function contact()
-    {
-        return $this->belongsTo(Contact::class);
-    }
+    const STATUSES = [
+        'new' => 'New',
+        'contacted' => 'Contacted',
+        'qualified' => 'Qualified',
+        'proposal_sent' => 'Proposal Sent',
+        'negotiation' => 'Negotiation',
+        'won' => 'Won',
+        'lost' => 'Lost',
+    ];
 
-    public function company()
+    const PRIORITIES = [
+        'low' => 'Low',
+        'medium' => 'Medium',
+        'high' => 'High',
+        'urgent' => 'Urgent',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
+    public function customer()
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function assignedUser()
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     public function deals()
@@ -46,25 +71,70 @@ class Lead extends Model
         return $this->hasMany(Task::class);
     }
 
+    public function followUps()
+    {
+        return $this->hasMany(FollowUp::class);
+    }
+
+    public function activities()
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Query Scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    public function scopeByPriority($query, $priority)
+    {
+        return $query->where('priority', $priority);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
+
     public function getStatusBadgeAttribute(): string
     {
-        return match($this->status) {
-            'new'         => 'warning',
-            'contacted'   => 'info',
-            'negotiating' => 'primary',
-            'closed'      => 'success',
-            'lost'        => 'danger',
-            default       => 'secondary',
+        return match ($this->status) {
+            'new' => 'info',
+            'contacted' => 'primary',
+            'qualified' => 'warning',
+            'proposal_sent' => 'secondary',
+            'negotiation' => 'danger',
+            'won' => 'success',
+            'lost' => 'dark',
+            default => 'secondary',
         };
     }
 
     public function getPriorityBadgeAttribute(): string
     {
-        return match($this->priority) {
-            'high'   => 'danger',
+        return match ($this->priority) {
+            'low' => 'success',
             'medium' => 'warning',
-            'low'    => 'success',
-            default  => 'secondary',
+            'high' => 'danger',
+            'urgent' => 'dark',
+            default => 'secondary',
         };
+    }
+
+    public function getStatusLabelAttribute()
+    {
+        return self::STATUSES[$this->status] ?? 'Unknown';
+    }
+
+    public function getPriorityLabelAttribute()
+    {
+        return self::PRIORITIES[$this->priority] ?? 'Unknown';
     }
 }

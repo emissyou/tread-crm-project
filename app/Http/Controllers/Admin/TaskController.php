@@ -34,10 +34,9 @@ class TaskController extends Controller
         }
 
         $tasks     = $query->orderBy('due_date')->paginate(15)->withQueryString();
-        $contacts  = Contact::orderBy('first_name')->get();
-        $leads     = Lead::orderBy('title')->get();
+        $leads     = Lead::orderBy('name')->get();
         $deals     = Deal::orderBy('title')->get();
-        $users     = User::where('is_active', true)->orderBy('name')->get();
+        $users     = User::orderBy('name')->get();
 
         $stats = [
             'total'       => Task::count(),
@@ -47,7 +46,7 @@ class TaskController extends Controller
             'overdue'     => Task::where('status', '!=', 'completed')->where('due_date', '<', now())->count(),
         ];
 
-        return view('admin.tasks.index', compact('tasks', 'contacts', 'leads', 'deals', 'users', 'stats'));
+        return view('admin.tasks.index', compact('tasks', 'leads', 'deals', 'users', 'stats'));
     }
 
     public function store(Request $request)

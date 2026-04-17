@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'role')) {
-                $table->enum('role', ['admin', 'manager', 'agent'])->default('agent')->after('email');
+                $table->enum('role', ['admin', 'manager', 'sales_staff'])->default('sales_staff')->after('email');
             }
             if (!Schema::hasColumn('users', 'phone')) {
                 $table->string('phone')->nullable()->after('role');

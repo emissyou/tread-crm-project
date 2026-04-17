@@ -12,17 +12,16 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->enum('status', ['pending', 'in_progress', 'completed', 'cancelled'])->default('pending');
-            $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
+            $table->string('status'); // pending, in_progress, completed, cancelled
+            $table->string('priority')->nullable(); // high, medium, low
             $table->date('due_date')->nullable();
             $table->time('due_time')->nullable();
-            $table->foreignId('contact_id')->nullable()->constrained('contacts')->nullOnDelete();
-            $table->foreignId('lead_id')->nullable()->constrained('leads')->nullOnDelete();
-            $table->foreignId('deal_id')->nullable()->constrained('deals')->nullOnDelete();
-            $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('lead_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('deal_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
