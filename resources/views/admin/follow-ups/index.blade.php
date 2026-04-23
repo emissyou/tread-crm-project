@@ -291,106 +291,160 @@
         </div>
     </div>
 </div>
-
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    let followUpModal = new bootstrap.Modal(document.getElementById('followUpModal'));
-    let followUpForm = document.getElementById('followUpForm');
+
+    console.log('🎉 Follow-up script starting...');
+
+    const modalElement = document.getElementById('followUpModal');
+    if (!modalElement) {
+        console.error('❌ Modal not found!');
+        return;
+    }
+
+    const followUpModal = new bootstrap.Modal(modalElement);
+    const followUpForm = document.getElementById('followUpForm');
+
     let isEditing = false;
     let editingFollowUpId = null;
 
-    // Handle data-action buttons
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('[data-action="create-followup"]')) {
-            createFollowUp();
-        }
-    });
-
-    // Make functions globally available (for onclick in dropdowns)
-    window.createFollowUp = function() {
+    function createFollowUp() {
+        console.log('✅ createFollowUp() called');
         isEditing = false;
         editingFollowUpId = null;
+
         document.getElementById('followUpModalTitle').textContent = 'Schedule Follow-up';
         followUpForm.reset();
 
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(9, 0, 0, 0);
-        followUpForm.querySelector('[name="due_date"]').value = tomorrow.toISOString().slice(0, 16);
+        const dueDateInput = followUpForm.querySelector('[name="due_date"]');
+        if (dueDateInput) dueDateInput.value = tomorrow.toISOString().slice(0, 16);
 
         followUpModal.show();
-    };
+    }
 
-    window.editFollowUp = function(followUpId) {
+    function editFollowUp(followUpId) {
+        console.log('✅ editFollowUp called:', followUpId);
         isEditing = true;
-        editingFollowUpId = followUpUpId;
+        editingFollowUpId = followUpId;
+
         document.getElementById('followUpModalTitle').textContent = 'Edit Follow-up';
 
         fetch(`/admin/follow-ups/${followUpId}`)
-            .then(response => response.json())
-            .then(followUp => {
-                followUpForm.querySelector('[name="title"]').value = followUp.title || '';
-                followUpForm.querySelector('[name="description"]').value = followUp.description || '';
-                followUpForm.querySelector('[name="customer_id"]').value = followUp.customer_id || '';
-                followUpForm.querySelector('[name="lead_id"]').value = followUp.lead_id || '';
-                followUpForm.querySelector('[name="due_date"]').value = followUp.due_date ? followUp.due_date.slice(0, 16) : '';
-                followUpForm.querySelector('[name="user_id"]').value = followUp.user_id || '';
+            .then(r => r.json())
+            .then(data => {
+                followUpForm.querySelector('[name="title"]').value = data.title || '';
+                followUpForm.querySelector('[name="description"]').value = data.description || '';
+                followUpForm.querySelector('[name="customer_id"]').value = data.customer_id || '';
+                followUpForm.querySelector('[name="lead_id"]').value = data.lead_id || '';
+                followUpForm.querySelector('[name="user_id"]').value = data.user_id || '';
+
+                const dueInput = followUpForm.querySelector('[name="due_date"]');
+                if (data.due_date && dueInput) dueInput.value = data.due_date.slice(0, 16);
+
                 followUpModal.show();
             })
-            .catch(() => alert('Error loading data'));
-    };
+            .catch(err => console.error(err));
+    }
 
-    window.toggleComplete = function(followUpId) {
+    function toggleComplete(followUpId) {
+        if (!confirm('Mark complete?')) return;
         fetch(`/admin/follow-ups/${followUpId}/toggle`, {
             method: 'PATCH',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Content-Type': 'application/json',
-            },
+                'Accept': 'application/json'
+            }
         })
         .then(r => r.json())
         .then(data => data.success ? location.reload() : alert('Error'))
-        .catch(() => alert('Error'));
-    };
+        .catch(() => alert('Network error'));
+    }
 
-    window.deleteFollowUp = function(followUpId, title) {
-        if (confirm(`Delete "${title}"?`)) {
-            fetch(`/admin/follow-ups/${followUpId}`, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-            })
-            .then(r => r.json())
-            .then(data => data.success ? location.reload() : alert('Error'))
-            .catch(() => alert('Error'));
-        }
-    };
-
-    // Form handler
-    followUpForm.onsubmit = function(e) {
-        e.preventDefault();
-        const formData = new FormData(followUpForm);
-        const url = isEditing ? `/admin/follow-ups/${editingFollowUpId}` : '/admin/follow-ups';
-        const method = isEditing ? 'PATCH' : 'POST';
-
-        fetch(url, {
-            method,
-            body: formData,
+    function deleteFollowUp(followUpId, title) {
+        if (!confirm(`Delete "${title}"?`)) return;
+        fetch(`/admin/follow-ups/${followUpId}`, {
+            method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
         })
         .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                followUpModal.hide();
-                location.reload();
-            } else {
-                alert('Validation error');
-            }
-        })
-        .catch(() => alert('Error'));
-    };
+        .then(data => data.success ? location.reload() : alert('Error'))
+        .catch(() => alert('Network error'));
+    }
+
+    window.createFollowUp = createFollowUp;
+    window.editFollowUp = editFollowUp;
+    window.toggleComplete = toggleComplete;
+    window.deleteFollowUp = deleteFollowUp;
+
+    // Click for create button
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="create-followup"]')) {
+            e.preventDefault();
+            createFollowUp();
+        }
+    });
+
+    // ====================== FIXED FORM SUBMIT (JSON) ======================
+    if (followUpForm) {
+        followUpForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Collect form data manually
+            const data = {
+                title: followUpForm.querySelector('[name="title"]').value.trim(),
+                description: followUpForm.querySelector('[name="description"]').value.trim(),
+                customer_id: followUpForm.querySelector('[name="customer_id"]').value || null,
+                lead_id: followUpForm.querySelector('[name="lead_id"]').value || null,
+                due_date: followUpForm.querySelector('[name="due_date"]').value,
+                user_id: followUpForm.querySelector('[name="user_id"]').value || null,
+            };
+
+            const url = isEditing ? `/admin/follow-ups/${editingFollowUpId}` : '/admin/follow-ups';
+            const method = isEditing ? 'PATCH' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.status === 419) {
+                    throw new Error('CSRF Token Mismatch - Please refresh the page and try again.');
+                }
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    followUpModal.hide();
+                    location.reload();
+                } else {
+                    let msg = 'Validation error';
+                    if (data.errors) {
+                        msg = Object.values(data.errors).flat().join('\n');
+                    }
+                    alert(msg);
+                }
+            })
+            .catch(err => {
+                console.error('Submit error:', err);
+                alert(err.message || 'Failed to save follow-up. Please refresh the page.');
+            });
+        });
+    }
+
+    console.log('✅ Follow-up JS fully loaded and ready');
 });
 </script>
-@endsection
+@endpush

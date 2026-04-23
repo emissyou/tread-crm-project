@@ -138,8 +138,8 @@
                         <div>
                             <h6 class="mb-1">{{ $activity->activity_type_label }}</h6>
                             <small class="text-muted">
-                                {{ $activity->date->format('M d, Y \a\t h:i A') }}
-                                by {{ $activity->createdBy->name }}
+                                {{ $activity->activity_date ? $activity->activity_date->format('M d, Y \a\t h:i A') : 'No date' }}
+                                by {{ $activity->createdBy?->name ?? 'Unknown' }}
                             </small>
                         </div>
                         <div class="d-flex gap-2 align-items-start">
@@ -264,153 +264,159 @@
 
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
-let activityModal = new bootstrap.Modal(document.getElementById('activityModal'));
-let activityForm = document.getElementById('activityForm');
-let isEditing = false;
-let editingActivityId = null;
+document.addEventListener('DOMContentLoaded', function() {
 
-function createActivity() {
-    isEditing = false;
-    editingActivityId = null;
-    document.getElementById('activityModalTitle').textContent = 'Log Activity';
-    activityForm.reset();
+    console.log('🎉 Activities JS loaded');
 
-    // Set default date to now
-    const now = new Date();
-    activityForm.querySelector('[name="date"]').value = now.toISOString().slice(0, 16);
+    const activityModal = new bootstrap.Modal(document.getElementById('activityModal'));
+    const activityForm = document.getElementById('activityForm');
 
-    activityModal.show();
-}
+    let isEditing = false;
+    let editingActivityId = null;
 
-function editActivity(activityId) {
-    isEditing = true;
-    editingActivityId = activityId;
-    document.getElementById('activityModalTitle').textContent = 'Edit Activity';
+    function showToast(message, type = 'success') {
+        const toastHTML = `
+            <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>`;
 
-    fetch(`/admin/activities/${activityId}`)
-        .then(response => response.json())
-        .then(activity => {
-            activityForm.querySelector('[name="activity_type"]').value = activity.activity_type;
-            activityForm.querySelector('[name="description"]').value = activity.description;
-            activityForm.querySelector('[name="date"]').value = activity.date.slice(0, 16);
-            activityForm.querySelector('[name="customer_id"]').value = activity.customer_id || '';
-            activityForm.querySelector('[name="lead_id"]').value = activity.lead_id || '';
-            if (activity.metadata) {
-                activityForm.querySelector('[name="metadata"]').value = JSON.stringify(activity.metadata, null, 2);
-                document.getElementById('metadataSection').style.display = 'block';
-            }
-            activityModal.show();
-        });
-}
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.top = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '9999';
+        container.innerHTML = toastHTML;
+        document.body.appendChild(container);
 
-function deleteActivity(activityId) {
-    if (confirm('Are you sure you want to delete this activity?')) {
+        const toast = new bootstrap.Toast(container.querySelector('.toast'), { delay: 4000 });
+        toast.show();
+
+        setTimeout(() => container.remove(), 4500);
+    }
+
+    function createActivity() {
+        isEditing = false;
+        editingActivityId = null;
+        document.getElementById('activityModalTitle').textContent = 'Log Activity';
+        activityForm.reset();
+
+        const now = new Date();
+        activityForm.querySelector('[name="date"]').value = now.toISOString().slice(0, 16);
+        document.getElementById('metadataSection').style.display = 'none';
+
+        activityModal.show();
+    }
+
+    function editActivity(activityId) {
+        isEditing = true;
+        editingActivityId = activityId;
+        document.getElementById('activityModalTitle').textContent = 'Edit Activity';
+
+        fetch(`/admin/activities/${activityId}`)
+            .then(r => r.json())
+            .then(activity => {
+                activityForm.querySelector('[name="activity_type"]').value = activity.activity_type || '';
+                activityForm.querySelector('[name="description"]').value = activity.description || '';
+                activityForm.querySelector('[name="date"]').value = activity.activity_date ? activity.activity_date.slice(0, 16) : '';
+                activityForm.querySelector('[name="customer_id"]').value = activity.customer_id || '';
+                activityForm.querySelector('[name="lead_id"]').value = activity.lead_id || '';
+
+                if (activity.metadata) {
+                    activityForm.querySelector('[name="metadata"]').value = JSON.stringify(activity.metadata, null, 2);
+                    document.getElementById('metadataSection').style.display = 'block';
+                }
+                activityModal.show();
+            })
+            .catch(() => showToast('Failed to load activity', 'danger'));
+    }
+
+    window.createActivity = createActivity;
+    window.editActivity = editActivity;
+    window.deleteActivity = function(activityId) {
+        if (!confirm('Delete this activity?')) return;
         fetch(`/admin/activities/${activityId}`, {
             method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
+        .then(r => r.json())
+        .then(data => data.success ? location.reload() : showToast('Delete failed', 'danger'))
+        .catch(() => showToast('Network error', 'danger'));
+    };
+
+    // Form Submit - with detailed error logging
+    activityForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const data = {
+            activity_type: activityForm.querySelector('[name="activity_type"]').value,
+            description: activityForm.querySelector('[name="description"]').value.trim(),
+            date: activityForm.querySelector('[name="date"]').value,
+            customer_id: activityForm.querySelector('[name="customer_id"]').value || null,
+            lead_id: activityForm.querySelector('[name="lead_id"]').value || null,
+        };
+
+        const metadataVal = activityForm.querySelector('[name="metadata"]').value.trim();
+        if (metadataVal) {
+            try {
+                data.metadata = JSON.parse(metadataVal);
+            } catch (e) {
+                showToast('Metadata must be valid JSON', 'danger');
+                return;
             }
+        }
+
+        const url = isEditing ? `/admin/activities/${editingActivityId}` : '/admin/activities';
+        const method = isEditing ? 'PATCH' : 'POST';
+
+        console.log('Sending data:', data);   // ← Debug log
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.error('Error response:', text);
+                    throw new Error(`Server responded with ${response.status}: ${text.substring(0, 300)}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success response:', data);
+            if (data.success) {
+                activityModal.hide();
+                showToast(data.message || 'Activity logged successfully!', 'success');
+                setTimeout(() => location.reload(), 1200);
+            } else {
+                showToast('Validation failed. Check console.', 'danger');
+            }
+        })
+        .catch(err => {
+            console.error('Full error:', err);
+            showToast(err.message || 'Failed to save activity', 'danger');
         });
-    }
-}
-
-// Show metadata field for certain activity types
-activityForm.querySelector('[name="activity_type"]').addEventListener('change', function() {
-    const metadataSection = document.getElementById('metadataSection');
-    const selectedType = this.value;
-
-    if (['call', 'meeting'].includes(selectedType)) {
-        metadataSection.style.display = 'block';
-    } else {
-        metadataSection.style.display = 'none';
-    }
-});
-
-activityForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(activityForm);
-    const url = isEditing ? `/admin/activities/${editingActivityId}` : '/admin/activities';
-    const method = isEditing ? 'PATCH' : 'POST';
-
-    // Parse metadata if provided
-    const metadataValue = formData.get('metadata');
-    if (metadataValue) {
-        try {
-            formData.set('metadata', JSON.parse(metadataValue));
-        } catch (e) {
-            alert('Invalid JSON in metadata field');
-            return;
-        }
-    }
-
-    fetch(url, {
-        method: method,
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            activityModal.hide();
-            location.reload();
-        } else if (data.errors) {
-            console.log(data.errors);
-        }
     });
+
 });
 </script>
 
 <style>
-.timeline {
-    position: relative;
-    padding-left: 30px;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #e3e7ef;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 30px;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -22px;
-    top: 5px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 8px;
-}
-
-.timeline-content {
-    background: #f8fafc;
-    border: 1px solid #e3e7ef;
-    border-radius: 8px;
-    padding: 16px;
-}
+.timeline { position: relative; padding-left: 30px; }
+.timeline::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: #e3e7ef; }
+.timeline-item { position: relative; margin-bottom: 30px; }
+.timeline-marker { position: absolute; left: -22px; top: 5px; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; }
+.timeline-content { background: #f8fafc; border: 1px solid #e3e7ef; border-radius: 8px; padding: 16px; }
 </style>
-@endsection
+@endpush

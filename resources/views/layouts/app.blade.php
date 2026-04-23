@@ -1073,6 +1073,8 @@ body.sidebar-collapsed .logout-item:hover .logout-tip {
                         'active' => request()->routeIs('admin.users.*'),
                         'tip' => 'Admin users and roles',
                     ] : null,
+
+
                     $user->canConfigureSystem() ? [
                         'label' => 'Settings',
                         'url' => route('admin.settings.index'),

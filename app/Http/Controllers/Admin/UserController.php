@@ -12,25 +12,29 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all();
+        $users = User::withoutTrashed()->get();
+
         $stats = [
-            'total' => User::count(),
-            'active' => User::count(),
-            'admin' => User::where('role', 'admin')->count(),
-            'manager' => User::where('role', 'manager')->count(),
-            'sales_staff' => User::where('role', 'sales_staff')->count(),
+            'total'       => User::withTrashed()->count(),
+            'active'      => User::withoutTrashed()->count(),
+            'admin'       => User::withoutTrashed()->where('role', 'admin')->count(),
+            'manager'     => User::withoutTrashed()->where('role', 'manager')->count(),
+            'sales_staff' => User::withoutTrashed()->where('role', 'sales_staff')->count(),
         ];
 
-        return view('admin.users.index', compact('users', 'stats'));
+        $archivedCount = User::onlyTrashed()->count();
+
+        return view('admin.users.index', compact('users', 'stats', 'archivedCount'));
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,manager,sales_staff',
+            'role'     => 'required|in:admin,manager,sales_staff',
+            'phone'    => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -38,16 +42,17 @@ class UserController extends Controller
         }
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'     => $request->name,
+            'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'role'     => $request->role,
+            'phone'    => $request->phone,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'User created successfully.',
-            'user' => $user,
+            'user'    => $user,
         ]);
     }
 
@@ -59,9 +64,10 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+            'name'  => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'role' => 'required|in:admin,manager,sales_staff',
+            'role'  => 'required|in:admin,manager,sales_staff',
+            'phone' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -69,12 +75,12 @@ class UserController extends Controller
         }
 
         $user->update([
-            'name' => $request->name,
+            'name'  => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
+            'role'  => $request->role,
+            'phone' => $request->phone,
         ]);
 
-        // Update password if provided
         if ($request->filled('password')) {
             $user->update(['password' => Hash::make($request->password)]);
         }
@@ -82,24 +88,81 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'User updated successfully.',
-            'user' => $user->fresh(),
+            'user'    => $user->fresh(),
         ]);
     }
 
-    public function destroy(User $user)
+    public function archived()
     {
-        // Prevent deleting the current user
-        if ($user->id === auth()->id()) {
-            return response()->json(['error' => 'Cannot delete your own account.'], 403);
-        }
+        $users = User::onlyTrashed()->orderByDesc('deleted_at')->get();
 
-        $user->delete();
-        return response()->json(['success' => true, 'message' => 'User deleted successfully.']);
+        return view('admin.users.archived', compact('users'));
     }
 
-    public function toggleActive(User $user)
+    /**
+     * Archive (soft delete) a user - FIXED VERSION
+     */
+    public function archive($id)
     {
-        // This endpoint is disabled as is_active column doesn't exist in schema
-        return response()->json(['error' => 'User status management not available'], 400);
+        // Use find() instead of findOrFail to prevent automatic 404
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => 'User not found.'
+            ], 404);
+        }
+
+        // Prevent archiving yourself
+        if ($user->id === auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You cannot archive your own account.'
+            ], 403);
+        }
+
+        if ($user->trashed()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'User is already archived.'
+            ], 400);
+        }
+
+        $user->delete();   // Soft delete
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User archived successfully.'
+        ]);
+    }
+
+    /**
+     * Restore an archived user - FIXED VERSION
+     */
+    public function restore($id)
+    {
+        $user = User::withTrashed()->find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => 'User not found.'
+            ], 404);
+        }
+
+        if (!$user->trashed()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'User is not archived.'
+            ], 400);
+        }
+
+        $user->restore();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User restored successfully.'
+        ]);
     }
 }
