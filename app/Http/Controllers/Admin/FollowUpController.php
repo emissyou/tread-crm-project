@@ -14,6 +14,8 @@ class FollowUpController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', FollowUp::class);
+
         $query = FollowUp::with(['customer', 'lead', 'user']); // ← Uses 'user' relationship
 
         if ($request->filled('search')) {
@@ -80,6 +82,8 @@ class FollowUpController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', FollowUp::class);
+
         $validator = Validator::make($request->all(), [
             'customer_id' => 'nullable|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -116,12 +120,15 @@ class FollowUpController extends Controller
 
     public function show(FollowUp $followUp)
     {
+        $this->authorize('view', $followUp);
+
         $followUp->load(['customer', 'lead', 'user']); // ← Uses 'user'
         return response()->json($followUp);
     }
 
     public function update(Request $request, FollowUp $followUp)
     {
+        $this->authorize('update', $followUp);
         $validator = Validator::make($request->all(), [
             'customer_id' => 'nullable|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -157,12 +164,15 @@ class FollowUpController extends Controller
 
     public function destroy(FollowUp $followUp)
     {
+        $this->authorize('delete', $followUp);
+
         $followUp->delete();
         return response()->json(['success' => true, 'message' => 'Follow-up deleted successfully.']);
     }
 
     public function toggleComplete(FollowUp $followUp)
     {
+        $this->authorize('update', $followUp);
         if ($followUp->status === 'completed') {
             $followUp->update(['status' => 'pending', 'completed_at' => null]);
             $message = 'Follow-up marked as pending.';

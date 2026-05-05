@@ -15,6 +15,8 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Task::class);
+
         $query = Task::with(['contact', 'lead', 'deal', 'assignedUser']);
 
         if ($request->filled('search')) {
@@ -51,6 +53,8 @@ class TaskController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Task::class);
+
         $validator = Validator::make($request->all(), [
             'title'       => 'required|string|max:200',
             'description' => 'nullable|string',
@@ -83,17 +87,22 @@ class TaskController extends Controller
 
     public function show(Task $task)
     {
+        $this->authorize('view', $task);
+
         $task->load(['contact', 'lead', 'deal', 'assignedUser', 'createdBy']);
         return response()->json($task);
     }
 
     public function edit(Task $task)
     {
+        $this->authorize('update', $task);
+
         return response()->json($task);
     }
 
     public function update(Request $request, Task $task)
     {
+        $this->authorize('update', $task);
         $validator = Validator::make($request->all(), [
             'title'       => 'required|string|max:200',
             'description' => 'nullable|string',
@@ -122,12 +131,16 @@ class TaskController extends Controller
 
     public function destroy(Task $task)
     {
+        $this->authorize('delete', $task);
+
         $task->delete();
         return response()->json(['success' => true, 'message' => 'Task deleted successfully.']);
     }
 
     public function toggleComplete(Task $task)
     {
+        $this->authorize('update', $task);
+
         $task->update([
             'status' => $task->status === 'completed' ? 'pending' : 'completed',
         ]);

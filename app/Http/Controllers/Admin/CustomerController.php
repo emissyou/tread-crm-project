@@ -12,6 +12,8 @@ class CustomerController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Customer::class);
+
         $query = Customer::query();
 
         if ($request->filled('search')) {
@@ -50,12 +52,15 @@ class CustomerController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Customer::class);
+
         $users = User::orderBy('name')->get();
         return view('admin.customers.create', compact('users'));
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Customer::class);
         $validator = Validator::make($request->all(), [
             'first_name'       => 'required|string|max:100',
             'last_name'        => 'required|string|max:100',
@@ -83,6 +88,8 @@ class CustomerController extends Controller
     // ✅ FIXED SHOW (SAFE FOR AJAX)
     public function show(Request $request, Customer $customer)
     {
+        $this->authorize('view', $customer);
+
         return response()->json([
             'success'  => true,
             'customer' => $customer
@@ -91,6 +98,8 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
+        $this->authorize('update', $customer);
+
         $users = User::orderBy('name')->get();
         return view('admin.customers.edit', compact('customer', 'users'));
     }
@@ -98,6 +107,7 @@ class CustomerController extends Controller
     // ✅ FIXED UPDATE (AJAX SAFE)
     public function update(Request $request, Customer $customer)
     {
+        $this->authorize('update', $customer);
         $validator = Validator::make($request->all(), [
             'first_name'       => 'required|string|max:100',
             'last_name'        => 'required|string|max:100',
@@ -124,6 +134,8 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer)
     {
+        $this->authorize('delete', $customer);
+
         $customer->delete();
 
         return response()->json([
@@ -134,6 +146,7 @@ class CustomerController extends Controller
 
     public function exportCsv()
     {
+        $this->authorize('viewAny', Customer::class);
         $customers = Customer::all();
         $filename  = 'customers_' . now()->format('Y_m_d') . '.csv';
 

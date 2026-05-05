@@ -46,7 +46,7 @@ Route::middleware(['auth'])
 
         // Reports
         Route::get('/reports', [ReportController::class, 'index'])
-            ->middleware('sales_staff')
+            ->middleware('manager')
             ->name('reports.index');
 
         // Customers

@@ -7,10 +7,12 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\Activity;
 use App\Models\FollowUp;
+use App\Models\Task;
 use App\Policies\CustomerPolicy;
 use App\Policies\LeadPolicy;
 use App\Policies\ActivityPolicy;
 use App\Policies\FollowUpPolicy;
+use App\Policies\TaskPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,7 @@ class AuthServiceProvider extends ServiceProvider
         Lead::class => LeadPolicy::class,
         Activity::class => ActivityPolicy::class,
         FollowUp::class => FollowUpPolicy::class,
+        Task::class => TaskPolicy::class,
     ];
 
     /**

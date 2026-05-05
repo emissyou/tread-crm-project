@@ -361,17 +361,54 @@ document.addEventListener('DOMContentLoaded', function() {
     userForm.addEventListener('submit', function(e) {
         e.preventDefault();
 
+        // Client-side validation
+        const name = userForm.querySelector('[name="name"]').value.trim();
+        const email = userForm.querySelector('[name="email"]').value.trim();
+        const role = userForm.querySelector('[name="role"]').value;
+        const password = userForm.querySelector('[name="password"]').value;
+        const phone = userForm.querySelector('[name="phone"]').value.trim();
+
+        if (!name) {
+            showToast('Name is required', 'danger');
+            return;
+        }
+
+        if (!email) {
+            showToast('Email is required', 'danger');
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showToast('Please enter a valid email address', 'danger');
+            return;
+        }
+
+        if (!role) {
+            showToast('Role is required', 'danger');
+            return;
+        }
+
+        if (!isEditing && password.length < 8) {
+            showToast('Password must be at least 8 characters long', 'danger');
+            return;
+        }
+
+        if (isEditing && password && password.length > 0 && password.length < 8) {
+            showToast('Password must be at least 8 characters long', 'danger');
+            return;
+        }
+
         const data = {
-            name: userForm.querySelector('[name="name"]').value.trim(),
-            email: userForm.querySelector('[name="email"]').value.trim(),
-            role: userForm.querySelector('[name="role"]').value,
-            phone: userForm.querySelector('[name="phone"]').value.trim(),
+            name: name,
+            email: email,
+            role: role,
+            phone: phone,
         };
 
         if (!isEditing) {
-            data.password = userForm.querySelector('[name="password"]').value;
-        } else if (userForm.querySelector('[name="password"]').value.trim() !== '') {
-            data.password = userForm.querySelector('[name="password"]').value;
+            data.password = password;
+        } else if (password.trim() !== '') {
+            data.password = password;
         }
 
         const url = isEditing ? `/admin/users/${editingUserId}` : '/admin/users';
@@ -381,21 +418,39 @@ document.addEventListener('DOMContentLoaded', function() {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
             },
             body: JSON.stringify(data)
         })
-        .then(res => res.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 userModal.hide();
                 showToast(data.message, 'success');
                 setTimeout(() => location.reload(), 1000);
             } else {
-                showToast('Validation error', 'danger');
+                showToast(data.error || 'Failed to save user', 'danger');
             }
         })
-        .catch(() => showToast('Failed to save user', 'danger'));
+        .catch(error => {
+            console.error('Error:', error);
+            if (error.errors) {
+                // Handle validation errors
+                let errorMessages = [];
+                for (let field in error.errors) {
+                    errorMessages.push(error.errors[field].join(', '));
+                }
+                showToast('Validation errors: ' + errorMessages.join('; '), 'danger');
+            } else {
+                showToast(error.message || 'An error occurred', 'danger');
+            }
+        });
     });
 
 });

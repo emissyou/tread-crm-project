@@ -97,4 +97,59 @@ class User extends Authenticatable
         return $this->isAdmin();           // Only Admin can delete customers
     }
 
+    /**
+     * Can view reports
+     */
+    public function canViewReports(): bool
+    {
+        return $this->isAdmin() || $this->isManager();
+    }
+
+    /**
+     * Can create customers
+     */
+    public function canCreateCustomers(): bool
+    {
+        return $this->isAdmin() || $this->isManager() || $this->isSalesStaff();
+    }
+
+    /**
+     * Can create leads
+     */
+    public function canCreateLeads(): bool
+    {
+        return $this->isAdmin() || $this->isManager() || $this->isSalesStaff();
+    }
+
+    /**
+     * Can create follow-ups
+     */
+    public function canCreateFollowUps(): bool
+    {
+        return $this->isAdmin() || $this->isManager() || $this->isSalesStaff();
+    }
+
+    /**
+     * Can create activities
+     */
+    public function canCreateActivities(): bool
+    {
+        return $this->isAdmin() || $this->isManager() || $this->isSalesStaff();
+    }
+
+    /**
+     * Can approve customer assignments (managers only)
+     */
+    public function canApproveAssignments(): bool
+    {
+        return $this->isManager();
+    }
+
+    /**
+     * Can view tasks and reminders
+     */
+    public function canViewTasks(): bool
+    {
+        return $this->isAdmin() || $this->isManager() || $this->isSalesStaff();
+    }
 }

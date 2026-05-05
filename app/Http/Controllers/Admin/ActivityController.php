@@ -14,6 +14,8 @@ class ActivityController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Activity::class);
+
         $query = Activity::with(['customer', 'lead', 'createdBy']);
 
         if ($request->filled('search')) {
@@ -71,6 +73,8 @@ class ActivityController extends Controller
 
     public function create(Request $request)
     {
+        $this->authorize('create', Activity::class);
+
         $customers = Customer::select('id', 'first_name', 'last_name', 'email')->get();
         $leads = Lead::select('id', 'name', 'email')->get();
 
@@ -82,6 +86,7 @@ class ActivityController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Activity::class);
         $validator = Validator::make($request->all(), [
             'customer_id' => 'nullable|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -118,12 +123,16 @@ class ActivityController extends Controller
 
     public function show(Activity $activity)
     {
+        $this->authorize('view', $activity);
+
         $activity->load(['customer', 'lead', 'createdBy']);
         return response()->json($activity);
     }
 
     public function edit(Activity $activity)
     {
+        $this->authorize('update', $activity);
+
         $customers = Customer::select('id', 'first_name', 'last_name', 'email')->get();
         $leads = Lead::select('id', 'name', 'email')->get();
 
@@ -132,6 +141,7 @@ class ActivityController extends Controller
 
     public function update(Request $request, Activity $activity)
     {
+        $this->authorize('update', $activity);
         $validator = Validator::make($request->all(), [
             'customer_id' => 'nullable|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -168,12 +178,16 @@ class ActivityController extends Controller
 
     public function destroy(Activity $activity)
     {
+        $this->authorize('delete', $activity);
+
         $activity->delete();
         return response()->json(['success' => true, 'message' => 'Activity deleted successfully.']);
     }
 
     public function getForCustomer(Customer $customer)
     {
+        $this->authorize('view', $customer);
+
         $activities = $customer->activities()
             ->with('createdBy')
             ->latest('date')
@@ -185,6 +199,8 @@ class ActivityController extends Controller
 
     public function getForLead(Lead $lead)
     {
+        $this->authorize('view', $lead);
+
         $activities = $lead->activities()
             ->with('createdBy')
             ->latest('date')
