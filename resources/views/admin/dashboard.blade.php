@@ -4,119 +4,275 @@
 @section('page_subtitle', 'Welcome back to your CRM control center.')
 
 @push('styles')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
+    /* ── Global font ─────────────────────────────────── */
+    body,
+    .card, .card-body, .card-header,
+    .list-group-item,
+    h1, h2, h3, h4, h5, h6,
+    p, small, span, a, button, .btn {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+
+    /* ── Stat colors ─────────────────────────────────── */
     .stat-change-up   { color: #198754; }
     .stat-change-down { color: #dc3545; }
+
+    /* ── Page header ─────────────────────────────────── */
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: nowrap;          /* keep title + buttons on one line */
+    }
+    .page-header-left {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .page-header-left .page-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.15rem;
+    }
+    .page-header-left .page-subtitle {
+        font-size: 0.78rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0;
+        color: #6c757d;
+    }
+    .page-actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-shrink: 0;
+    }
+    /* Shrink buttons on mobile so they fit beside the title */
+    @media (max-width: 575.98px) {
+        .page-actions .btn-crm-primary,
+        .page-actions .btn-crm-secondary {
+            font-size: 0.72rem !important;
+            padding: 0.3rem 0.55rem !important;
+            white-space: nowrap;
+        }
+    }
+
+    /* ── Stat cards ──────────────────────────────────── */
+    .stat-card-body {
+        padding: 0.85rem 0.6rem !important;
+    }
+    .stat-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.6rem;
+        font-size: 1rem;
+    }
+    .stat-number {
+        font-size: 1.35rem !important;  /* fixed size that won't overflow on 390px */
+        font-weight: 800 !important;
+        line-height: 1.15;
+        word-break: keep-all;           /* never break ₱5,424,776 mid-number */
+        overflow-wrap: normal;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+    .stat-label {
+        font-size: 0.7rem !important;
+        color: #6c757d;
+        margin-bottom: 0.3rem;
+        line-height: 1.2;
+    }
+    .stat-change {
+        font-size: 0.68rem !important;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    /* ── Chart wrapper ───────────────────────────────── */
+    .chart-wrapper {
+        position: relative;
+        height: 240px;
+    }
+    @media (max-width: 575.98px) {
+        .chart-wrapper { height: 180px; }
+    }
+    .chart-wrapper canvas {
+        position: absolute;
+        inset: 0;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* ── Card headers ────────────────────────────────── */
+    .card-header h5 { font-size: 0.85rem !important; }
+
+    /* ── Pipeline ────────────────────────────────────── */
+    .pipeline-item { min-width: 0; font-size: 0.8rem; }
+
+    /* ── Activity rows ───────────────────────────────── */
+    .activity-row { flex-wrap: nowrap; gap: 0.5rem; align-items: center; }
+    .activity-text { min-width: 0; flex: 1 1 0; }
+    .activity-text h6 { font-size: 0.82rem !important; margin-bottom: 0.1rem; }
+    .activity-text small { font-size: 0.68rem; word-break: break-word; }
+    .activity-badge-col { flex-shrink: 0; }
+
+    /* ── Task rows ───────────────────────────────────── */
+    .task-title { font-size: 0.82rem !important; }
+    .task-badge-wrap { flex-shrink: 0; }
+
+    /* ── Top customer cards ──────────────────────────── */
+    .customer-card-body {
+        padding: 0.75rem 0.5rem !important;
+        text-align: center;
+    }
+    .customer-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    .customer-name { font-size: 0.78rem !important; font-weight: 700; }
+    .customer-company { font-size: 0.68rem !important; color: #6c757d; }
+    .customer-value { font-size: 0.82rem !important; font-weight: 700; }
 </style>
 @endpush
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-3 py-md-4">
 
     {{-- ─── Welcome Header ──────────────────────────────────────────────── --}}
-    <div class="page-header mb-5">
+    <div class="page-header mb-4 mb-md-5">
         <div class="page-header-left">
-            <h1 class="page-title"><i class="fas fa-chart-line me-2 text-primary"></i>Dashboard</h1>
-            <p class="page-subtitle">Welcome back, {{ auth()->user()->name }}! Here's what's happening with your CRM.</p>
+            <h1 class="page-title">
+                <i class="fas fa-chart-line me-2 text-primary"></i>Dashboard
+            </h1>
+            <p class="page-subtitle">
+                Welcome back, {{ auth()->user()->name }}!
+            </p>
         </div>
         <div class="page-actions">
-            <a href="{{ route('admin.dashboard') }}" class="btn-crm-secondary"><i class="fas fa-sync-alt"></i> Refresh</a>
-            <a href="{{ route('admin.leads.index') }}" class="btn-crm-primary"><i class="fas fa-plus"></i> New Lead</a>
+            <a href="{{ route('admin.dashboard') }}" class="btn-crm-secondary">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </a>
+            <a href="{{ route('admin.leads.index') }}" class="btn-crm-primary">
+                <i class="fas fa-plus"></i> New Lead
+            </a>
         </div>
     </div>
 
     {{-- ─── Summary Cards ────────────────────────────────────────────────── --}}
-    <div class="row g-4 mb-5">
+    <div class="row g-2 g-md-4 mb-4 mb-md-5">
 
-        {{-- Total Contacts --}}
-        <div class="col-xl-3 col-md-6">
+        {{-- Total Customers --}}
+        <div class="col-6 col-xl-3">
             <div class="card card-tread border-0 shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <div class="avatar bg-success bg-opacity-10 text-success rounded-circle mx-auto mb-3 p-3
-                                d-flex align-items-center justify-content-center" style="width:70px;height:70px;">
-                        <i class="fas fa-users fa-lg"></i>
+                <div class="card-body stat-card-body text-center">
+                    <div class="stat-avatar bg-success bg-opacity-10 text-success">
+                        <i class="fas fa-users"></i>
                     </div>
-                    <h3 class="h2 fw-bold text-success mb-1">{{ number_format($stats['totalCustomers']) }}</h3>
-                    <p class="text-muted mb-2">Total Customers</p>
+                    <span class="stat-number text-success">{{ number_format($stats['totalCustomers']) }}</span>
+                    <p class="stat-label mb-1">Total Customers</p>
                     @if($stats['customersGrowth'] >= 0)
-                        <small class="stat-change-up fw-semibold">
-                            <i class="fas fa-arrow-up me-1"></i>{{ $stats['customersGrowth'] }}% from last month
-                        </small>
+                        <span class="stat-change stat-change-up">
+                            <i class="fas fa-arrow-up"></i> {{ $stats['customersGrowth'] }}% from last month
+                        </span>
                     @else
-                        <small class="stat-change-down fw-semibold">
-                            <i class="fas fa-arrow-down me-1"></i>{{ abs($stats['customersGrowth']) }}% from last month
-                        </small>
+                        <span class="stat-change stat-change-down">
+                            <i class="fas fa-arrow-down"></i> {{ abs($stats['customersGrowth']) }}% from last month
+                        </span>
                     @endif
                 </div>
             </div>
         </div>
 
         {{-- Total Leads --}}
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-xl-3">
             <div class="card card-tread border-0 shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <div class="avatar bg-warning bg-opacity-10 text-warning rounded-circle mx-auto mb-3 p-3
-                                d-flex align-items-center justify-content-center" style="width:70px;height:70px;">
-                        <i class="fas fa-bullseye fa-lg"></i>
+                <div class="card-body stat-card-body text-center">
+                    <div class="stat-avatar bg-warning bg-opacity-10 text-warning">
+                        <i class="fas fa-bullseye"></i>
                     </div>
-                    <h3 class="h2 fw-bold text-warning mb-1">{{ number_format($stats['totalLeads']) }}</h3>
-                    <p class="text-muted mb-2">Total Leads</p>
+                    <span class="stat-number text-warning">{{ number_format($stats['totalLeads']) }}</span>
+                    <p class="stat-label mb-1">Total Leads</p>
                     @if($stats['leadsGrowth'] >= 0)
-                        <small class="stat-change-up fw-semibold">
-                            <i class="fas fa-arrow-up me-1"></i>{{ $stats['leadsGrowth'] }}% growth
-                        </small>
+                        <span class="stat-change stat-change-up">
+                            <i class="fas fa-arrow-up"></i> {{ $stats['leadsGrowth'] }}% growth
+                        </span>
                     @else
-                        <small class="stat-change-down fw-semibold">
-                            <i class="fas fa-arrow-down me-1"></i>{{ abs($stats['leadsGrowth']) }}% decline
-                        </small>
+                        <span class="stat-change stat-change-down">
+                            <i class="fas fa-arrow-down"></i> {{ abs($stats['leadsGrowth']) }}% decline
+                        </span>
                     @endif
                 </div>
             </div>
         </div>
 
         {{-- Total Deals --}}
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-xl-3">
             <div class="card card-tread border-0 shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <div class="avatar bg-info bg-opacity-10 text-info rounded-circle mx-auto mb-3 p-3
-                                d-flex align-items-center justify-content-center" style="width:70px;height:70px;">
-                        <i class="fas fa-handshake fa-lg"></i>
+                <div class="card-body stat-card-body text-center">
+                    <div class="stat-avatar bg-info bg-opacity-10 text-info">
+                        <i class="fas fa-handshake"></i>
                     </div>
-                    <h3 class="h2 fw-bold text-info mb-1">{{ number_format($stats['totalDeals']) }}</h3>
-                    <p class="text-muted mb-2">Total Deals</p>
+                    <span class="stat-number text-info">{{ number_format($stats['totalDeals']) }}</span>
+                    <p class="stat-label mb-1">Total Deals</p>
                     @if($stats['dealsGrowth'] >= 0)
-                        <small class="stat-change-up fw-semibold">
-                            <i class="fas fa-arrow-up me-1"></i>{{ $stats['dealsGrowth'] }}% increase
-                        </small>
+                        <span class="stat-change stat-change-up">
+                            <i class="fas fa-arrow-up"></i> {{ $stats['dealsGrowth'] }}% increase
+                        </span>
                     @else
-                        <small class="stat-change-down fw-semibold">
-                            <i class="fas fa-arrow-down me-1"></i>{{ abs($stats['dealsGrowth']) }}% decrease
-                        </small>
+                        <span class="stat-change stat-change-down">
+                            <i class="fas fa-arrow-down"></i> {{ abs($stats['dealsGrowth']) }}% decrease
+                        </span>
                     @endif
                 </div>
             </div>
         </div>
 
         {{-- Total Revenue --}}
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-xl-3">
             <div class="card card-tread border-0 shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle mx-auto mb-3 p-3
-                                d-flex align-items-center justify-content-center" style="width:70px;height:70px;">
-                        <i class="fas fa-dollar-sign fa-lg"></i>
+                <div class="card-body stat-card-body text-center">
+                    <div class="stat-avatar bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-peso-sign"></i>
                     </div>
-                    <h3 class="h2 fw-bold text-primary mb-2">
-                        ₱{{ number_format($stats['totalRevenue'], 0) }}
-                    </h3>
-                    <p class="text-muted mb-2">Total Revenue</p>
+                    {{-- Use PHP to format to short form (e.g. ₱5.4M) when large --}}
+                    @php
+                        $rev = $stats['totalRevenue'];
+                        $revDisplay = $rev >= 1000000
+                            ? '₱' . number_format($rev / 1000000, 1) . 'M'
+                            : ($rev >= 1000 ? '₱' . number_format($rev / 1000, 1) . 'K' : '₱' . number_format($rev, 0));
+                    @endphp
+                    <span class="stat-number text-primary">{{ $revDisplay }}</span>
+                    <p class="stat-label mb-1">Total Revenue</p>
                     @if($stats['revenueGrowth'] >= 0)
-                        <small class="stat-change-up fw-semibold">
-                            <i class="fas fa-arrow-up me-1"></i>+{{ $stats['revenueGrowth'] }}% vs last month
-                        </small>
+                        <span class="stat-change stat-change-up">
+                            <i class="fas fa-arrow-up"></i> +{{ $stats['revenueGrowth'] }}% vs last month
+                        </span>
                     @else
-                        <small class="stat-change-down fw-semibold">
-                            <i class="fas fa-arrow-down me-1"></i>{{ abs($stats['revenueGrowth']) }}% vs last month
-                        </small>
+                        <span class="stat-change stat-change-down">
+                            <i class="fas fa-arrow-down"></i> {{ abs($stats['revenueGrowth']) }}% vs last month
+                        </span>
                     @endif
                 </div>
             </div>
@@ -124,32 +280,36 @@
     </div>
 
     {{-- ─── Charts Row ───────────────────────────────────────────────────── --}}
-    <div class="row g-4 mb-5">
+    <div class="row g-3 g-md-4 mb-4 mb-md-5">
 
         {{-- Monthly Revenue Chart --}}
-        <div class="col-xl-8">
+        <div class="col-12 col-xl-8">
             <div class="card card-tread border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+                <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between
+                            flex-wrap gap-2">
                     <h5 class="card-title mb-0 fw-semibold">
                         <i class="fas fa-chart-line me-2 text-primary"></i>Monthly Revenue (Won Deals)
                     </h5>
                     <span class="text-muted small">Last 6 months</span>
                 </div>
-                <div class="card-body p-4">
-                    <canvas id="salesChart" height="120"></canvas>
+                <div class="card-body p-3 p-md-4">
+                    {{-- chart-wrapper controls canvas height responsively --}}
+                    <div class="chart-wrapper">
+                        <canvas id="salesChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
 
         {{-- Leads Pipeline --}}
-        <div class="col-xl-4">
+        <div class="col-12 col-xl-4">
             <div class="card card-tread border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom">
                     <h5 class="card-title mb-0 fw-semibold">
                         <i class="fas fa-filter me-2 text-warning"></i>Leads Pipeline
                     </h5>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body p-3 p-md-4">
                     <div class="d-flex align-items-center mb-4">
                         <div class="flex-grow-1">
                             <h6 class="mb-1 fw-bold">Conversion Rate</h6>
@@ -177,7 +337,7 @@
                                 default       => 'bg-secondary',
                             };
                         @endphp
-                        <div class="list-group-item px-0 border-0 py-2
+                        <div class="list-group-item px-0 border-0 py-2 pipeline-item
                             {{ $stage['status'] === 'closed' ? 'fw-bold' : '' }}">
                             <div class="d-flex justify-content-between">
                                 <span class="{{ $stage['status'] === 'closed' ? 'text-success' : 'text-muted' }}">
@@ -197,10 +357,10 @@
     </div>
 
     {{-- ─── Activity & Tasks ─────────────────────────────────────────────── --}}
-    <div class="row g-4">
+    <div class="row g-3 g-md-4 mb-4 mb-md-5">
 
         {{-- Recent Activities --}}
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card card-tread border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom">
                     <h5 class="card-title mb-0 fw-semibold">
@@ -210,20 +370,20 @@
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         @forelse($recentActivities as $activity)
-                        <div class="list-group-item px-4 py-3 border-0">
-                            <div class="row align-items-center">
-                                <div class="col-auto">
+                        <div class="list-group-item px-3 px-md-4 py-3 border-0">
+                            <div class="d-flex activity-row align-items-center">
+                                <div class="flex-shrink-0">
                                     <div class="{{ $activity['iconBg'] }} rounded-circle p-2">
                                         <i class="{{ $activity['icon'] }}"></i>
                                     </div>
                                 </div>
-                                <div class="col">
-                                    <h6 class="mb-1">{{ $activity['title'] }}</h6>
+                                <div class="activity-text ms-2">
+                                    <h6 class="mb-1 text-truncate">{{ $activity['title'] }}</h6>
                                     <small class="text-muted">
                                         {{ $activity['subtitle'] }} • {{ $activity['time']->diffForHumans() }}
                                     </small>
                                 </div>
-                                <div class="col-auto">
+                                <div class="activity-badge-col ms-2 flex-shrink-0">
                                     <span class="badge {{ $activity['badgeClass'] }}">{{ $activity['badge'] }}</span>
                                 </div>
                             </div>
@@ -239,9 +399,10 @@
         </div>
 
         {{-- Upcoming Tasks --}}
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card card-tread border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center
+                            flex-wrap gap-2">
                     <h5 class="card-title mb-0 fw-semibold">
                         <i class="fas fa-tasks me-2 text-warning"></i>Upcoming Tasks
                     </h5>
@@ -269,11 +430,11 @@
                                 default     => $dueDate->format('D d M'),
                             };
                         @endphp
-                        <div class="list-group-item px-4 py-3 border-0
+                        <div class="list-group-item px-3 px-md-4 py-3 border-0
                             {{ $isOverdue ? 'bg-danger bg-opacity-10' : '' }}">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="mb-1">{{ $task->title }}</h6>
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div class="min-width-0">
+                                    <h6 class="mb-1 text-truncate">{{ $task->title }}</h6>
                                     <small class="text-muted">
                                         @if($task->customer)
                                             {{ $task->customer->first_name }} {{ $task->customer->last_name }}
@@ -284,7 +445,7 @@
                                         @endif
                                     </small>
                                 </div>
-                                <div class="align-self-start">
+                                <div class="task-badge-wrap">
                                     <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
                                 </div>
                             </div>
@@ -302,32 +463,39 @@
         {{-- Top Contacts by Deal Value --}}
         <div class="col-12">
             <div class="card card-tread border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center
+                            flex-wrap gap-2">
                     <h5 class="card-title mb-0 fw-semibold">
                         <i class="fas fa-star me-2 text-warning"></i>Top Customers by Deal Value
                     </h5>
                     <a href="{{ route('admin.customers.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
+                <div class="card-body p-2 p-md-3">
+                    <div class="row g-2 g-md-3">
                         @php
                             $avatarColors = ['bg-primary','bg-success','bg-warning','bg-info'];
                         @endphp
                         @forelse($topCustomers as $i => $customer)
-                        <div class="col-md-6 col-lg-3">
+                        {{-- 2-up on phones, 4-up on large screens --}}
+                        <div class="col-6 col-lg-3">
                             <div class="card h-100 border-0 bg-light">
-                                <div class="card-body text-center p-4">
-                                    <div class="avatar {{ $avatarColors[$i % 4] }} text-white rounded-circle
-                                                mx-auto mb-3 d-flex align-items-center justify-content-center fw-bold"
-                                         style="width:60px;height:60px;">
+                                <div class="customer-card-body card-body">
+                                    <div class="customer-avatar {{ $avatarColors[$i % 4] }}">
                                         {{ strtoupper(substr($customer->first_name,0,1) . substr($customer->last_name,0,1)) }}
                                     </div>
-                                    <h6 class="fw-bold mb-1">{{ $customer->first_name }} {{ $customer->last_name }}</h6>
-                                    <p class="text-muted small mb-2">{{ $customer->company ?? '—' }}</p>
-                                    <div class="h6 fw-bold text-primary mb-1">
-                                        ₱{{ number_format($customer->deals_sum_value ?? 0) }}
+                                    <h6 class="customer-name mb-1 text-truncate">
+                                        {{ $customer->first_name }} {{ $customer->last_name }}
+                                    </h6>
+                                    <p class="customer-company mb-1 text-truncate">{{ $customer->company ?? '—' }}</p>
+                                    <div class="customer-value text-primary mb-1">
+                                        @php
+                                            $dv = $customer->deals_sum_value ?? 0;
+                                            echo $dv >= 1000000
+                                                ? '₱'.number_format($dv/1000000,1).'M'
+                                                : ($dv >= 1000 ? '₱'.number_format($dv/1000,1).'K' : '₱'.number_format($dv,0));
+                                        @endphp
                                     </div>
-                                    <small class="text-success">
+                                    <small class="text-success" style="font-size:0.68rem;">
                                         {{ $customer->deals_count ?? 0 }}
                                         {{ Str::plural('deal', $customer->deals_count ?? 0) }}
                                     </small>
@@ -356,7 +524,7 @@ new Chart(ctx, {
     data: {
         labels: {!! json_encode($chartData['labels']) !!},
         datasets: [{
-            label: 'Revenue ($)',
+            label: 'Revenue (₱)',
             data: {!! json_encode($chartData['values']) !!},
             borderColor: '#0d6efd',
             backgroundColor: 'rgba(13,110,253,0.08)',
@@ -369,25 +537,35 @@ new Chart(ctx, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false,   // ← ADD THIS
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: {
                 callbacks: {
-                    label: ctx => ' $' + ctx.parsed.y.toLocaleString()
+                    label: ctx => ' ₱' + ctx.parsed.y.toLocaleString()
                 }
             }
         },
         scales: {
             y: {
                 beginAtZero: true,
-                ticks: { callback: v => '$' + v.toLocaleString() }
+                ticks: {
+                    callback: v => '₱' + v.toLocaleString(),
+                    // Fewer ticks on small screens
+                    maxTicksLimit: window.innerWidth < 576 ? 4 : 6,
+                }
+            },
+            x: {
+                ticks: {
+                    // Abbreviate labels on mobile to avoid overlap
+                    callback: function(val, index) {
+                        const label = this.getLabelForValue(val);
+                        return window.innerWidth < 576 ? label.substring(0, 3) : label;
+                    }
+                }
             }
         }
     }
 });
-    
-    
-   
 </script>
 @endpush

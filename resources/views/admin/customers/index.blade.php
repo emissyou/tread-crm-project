@@ -4,7 +4,309 @@
 @section('page_title', 'Customers')
 @section('page_subtitle', 'Manage your customer database and relationships.')
 
+@push('styles')
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+
+    /* ── Fix: exclude Font Awesome <i> tags from DM Sans override ── */
+    *:not(i):not([class*="fa"]) {
+        font-family: 'DM Sans', sans-serif !important;
+    }
+    i, [class*="fa"] {
+        font-family: inherit;
+    }
+    code, pre, .font-mono {
+        font-family: 'DM Mono', monospace !important;
+    }
+
+    /* ── Page header responsive ── */
+    .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .page-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    /* ── Stats cards: 2-col on mobile, 4-col on md+ ── */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    @media (min-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    /* ── Filter form: stack on mobile ── */
+    .filter-form .row > [class*="col-"] {
+        width: 100%;
+    }
+    @media (min-width: 768px) {
+        .filter-form .col-md-4 { width: 33.333%; }
+        .filter-form .col-md-2 { width: 16.666%; }
+        .filter-form .col-md-3 { width: 25%; }
+    }
+
+    /* ── Table: horizontally scrollable on small screens ── */
+    .crm-table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .crm-table {
+        min-width: 640px;
+    }
+
+    /* ── Mobile card view for customer rows ── */
+    @media (max-width: 575px) {
+        .crm-table thead { display: none; }
+        .crm-table, .crm-table tbody, .crm-table tr, .crm-table td {
+            display: block;
+            width: 100%;
+        }
+        .crm-table tr {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+        .crm-table td {
+            border: none;
+            padding: 0.3rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .crm-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #9ca3af;
+            min-width: 70px;
+            padding-top: 2px;
+        }
+        .crm-table td:first-child { padding-top: 0.1rem; }
+        .crm-table td.td-actions { justify-content: flex-end; }
+    }
+
+    /* ── Pagination ── */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 1.25rem;
+        padding: 0.85rem 0.5rem;
+        border-top: 1px solid #eef2ff;
+    }
+
+    /* ── Tailwind-style pagination (nav > div > span/a) ── */
+    .pagination-wrapper nav {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .pagination-wrapper nav > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        width: 100%;
+    }
+    .pagination-wrapper nav span,
+    .pagination-wrapper nav a {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 0 0.55rem !important;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: #374151 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        transition: all .15s !important;
+        line-height: 1 !important;
+    }
+    .pagination-wrapper nav a:hover {
+        background: #f3f4f6 !important;
+        border-color: #d1d5db !important;
+        color: #111827 !important;
+    }
+    .pagination-wrapper nav span[aria-current="page"] > span {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3) !important;
+        border-radius: 8px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 0.55rem !important;
+    }
+    .pagination-wrapper nav span[aria-disabled="true"] > span {
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        color: #c0c5ce !important;
+        cursor: not-allowed !important;
+    }
+    .pagination-wrapper nav span:not([aria-current]):not([aria-label]):not([aria-disabled]) {
+        border-color: transparent !important;
+        background: transparent !important;
+        cursor: default !important;
+        color: #9ca3af !important;
+    }
+
+    /* ── Bootstrap-style pagination (ul.pagination > li.page-item > a.page-link) ── */
+    .pagination-wrapper .pagination {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.3rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+        width: 100% !important;
+    }
+    .pagination-wrapper .pagination .page-item {
+        list-style: none !important;
+    }
+    .pagination-wrapper .pagination .page-link {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 0 0.55rem !important;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: #374151 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        transition: all .15s !important;
+        line-height: 1 !important;
+        box-shadow: none !important;
+    }
+    .pagination-wrapper .pagination .page-link:hover {
+        background: #f3f4f6 !important;
+        border-color: #d1d5db !important;
+        color: #111827 !important;
+        z-index: auto !important;
+    }
+    .pagination-wrapper .pagination .page-item.active .page-link {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3) !important;
+    }
+    .pagination-wrapper .pagination .page-item.disabled .page-link {
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        color: #c0c5ce !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+
+    /* SVG arrows — fix oversized chevrons for both pagination types */
+    .pagination-wrapper svg {
+        width: 14px !important;
+        height: 14px !important;
+        display: block !important;
+        flex-shrink: 0 !important;
+        pointer-events: none;
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+        .pagination-wrapper nav span,
+        .pagination-wrapper nav a,
+        .pagination-wrapper .pagination .page-link {
+            min-width: 30px !important;
+            height: 30px !important;
+            font-size: 0.78rem !important;
+            border-radius: 6px !important;
+        }
+        .pagination-wrapper nav span[aria-current="page"] > span {
+            min-width: 30px !important;
+            height: 30px !important;
+            border-radius: 6px !important;
+        }
+        .pagination-wrapper svg {
+            width: 12px !important;
+            height: 12px !important;
+        }
+    }
+
+    /* ── Avatar circles (scoped to page content only) ── */
+    #customers-page .avatar-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #fff !important;
+        flex-shrink: 0;
+        letter-spacing: 0.02em;
+    }
+    /* Stat card avatar: show number */
+    #customers-page .stats-grid .avatar-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 800;
+    }
+    /* Big avatar in view modal */
+    #customers-page .avatar-circle.fs-2 {
+        font-size: 1.6rem !important;
+        border-radius: 20px;
+    }
+    /* Colour utilities for avatar */
+    #customers-page .avatar-circle.bg-primary  { background: linear-gradient(135deg,#3b82f6,#2563eb) !important; }
+    #customers-page .avatar-circle.bg-success  { background: linear-gradient(135deg,#10b981,#059669) !important; }
+    #customers-page .avatar-circle.bg-warning  { background: linear-gradient(135deg,#f59e0b,#d97706) !important; }
+    #customers-page .avatar-circle.bg-info     { background: linear-gradient(135deg,#06b6d4,#0891b2) !important; }
+    #customers-page .avatar-circle.bg-danger   { background: linear-gradient(135deg,#ef4444,#dc2626) !important; }
+    #customers-page .avatar-circle.bg-secondary{ background: linear-gradient(135deg,#6b7280,#4b5563) !important; }
+
+    /* ── Responsive page header ── */
+    @media (max-width: 575px) {
+        .page-header { flex-direction: column; }
+        .page-actions { width: 100%; }
+        .page-actions .btn-crm-primary,
+        .page-actions .btn { flex: 1; justify-content: center; }
+    }
+</style>
+@endpush
+
 @section('content')
+<div id="customers-page">
 <div class="page-header">
     <div class="page-header-left">
         <h1 class="page-title"><i class="fas fa-users me-2 text-primary"></i>Customers</h1>
@@ -21,48 +323,40 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="crm-card p-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="avatar-circle bg-primary">{{ $stats['total'] }}</div>
-                <div>
-                    <div class="fw-bold">{{ $stats['total'] }} Total</div>
-                    <div class="text-muted small">All records</div>
-                </div>
+<div class="stats-grid">
+    <div class="crm-card p-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle bg-primary">{{ $stats['total'] }}</div>
+            <div>
+                <div class="fw-bold">{{ $stats['total'] }} Total</div>
+                <div class="text-muted small">All records</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="crm-card p-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="avatar-circle bg-success">{{ $stats['customer'] }}</div>
-                <div>
-                    <div class="fw-bold">{{ $stats['customer'] }} Customers</div>
-                    <div class="text-muted small">Active customers</div>
-                </div>
+    <div class="crm-card p-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle bg-success">{{ $stats['customer'] }}</div>
+            <div>
+                <div class="fw-bold">{{ $stats['customer'] }} Customers</div>
+                <div class="text-muted small">Active customers</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="crm-card p-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="avatar-circle bg-warning">{{ $stats['lead'] }}</div>
-                <div>
-                    <div class="fw-bold">{{ $stats['lead'] }} Leads</div>
-                    <div class="text-muted small">Potential customers</div>
-                </div>
+    <div class="crm-card p-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle bg-warning">{{ $stats['lead'] }}</div>
+            <div>
+                <div class="fw-bold">{{ $stats['lead'] }} Leads</div>
+                <div class="text-muted small">Potential customers</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="crm-card p-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="avatar-circle bg-info">{{ $stats['prospect'] }}</div>
-                <div>
-                    <div class="fw-bold">{{ $stats['prospect'] }} Prospects</div>
-                    <div class="text-muted small">New prospects</div>
-                </div>
+    <div class="crm-card p-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle bg-info">{{ $stats['prospect'] }}</div>
+            <div>
+                <div class="fw-bold">{{ $stats['prospect'] }} Prospects</div>
+                <div class="text-muted small">New prospects</div>
             </div>
         </div>
     </div>
@@ -71,7 +365,7 @@
 <!-- Filters -->
 <div class="crm-card mb-4">
     <div class="crm-card-body">
-        <form method="GET" class="row g-3" id="filterForm">
+        <form method="GET" class="row g-3 filter-form" id="filterForm">
             <div class="col-md-4">
                 <label class="crm-label">Search</label>
                 <input type="text" class="crm-input" name="search" value="{{ request('search') }}" placeholder="Search customers...">
@@ -135,7 +429,7 @@
                 <tbody>
                     @forelse($customers as $customer)
                     <tr>
-                        <td>
+                        <td data-label="Customer">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="avatar-circle bg-primary">
                                     {{ $customer->initials }}
@@ -146,27 +440,27 @@
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Contact">
                             <div>{{ $customer->email ?? '—' }}</div>
                             @if($customer->phone)
                                 <div class="text-muted small">{{ $customer->phone }}</div>
                             @endif
                         </td>
-                        <td>{{ $customer->company ?? '—' }}</td>
-                        <td>
+                        <td data-label="Company">{{ $customer->company ?? '—' }}</td>
+                        <td data-label="Status">
                             <span class="badge-crm badge-{{ $customer->status_badge }}">
                                 {{ ucfirst($customer->status) }}
                             </span>
                         </td>
-                        <td>
+                        <td data-label="Assigned">
                             @if($customer->assignedUser)
                                 <span class="small">{{ $customer->assignedUser->name }}</span>
                             @else
                                 <span class="text-muted small">Unassigned</span>
                             @endif
                         </td>
-                        <td>{{ $customer->created_at->format('M d, Y') }}</td>
-                        <td>
+                        <td data-label="Created">{{ $customer->created_at->format('M d, Y') }}</td>
+                        <td data-label="Actions" class="td-actions">
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                     <i class="fas fa-ellipsis-v"></i>
@@ -201,17 +495,21 @@
             </table>
         </div>
 
+        {{-- ── FIXED PAGINATION ── --}}
         @if($customers->hasPages())
-            <div class="d-flex justify-content-center mt-4">
-                {{ $customers->links() }}
+            <div class="pagination-wrapper">
+                {{ $customers->onEachSide(1)->appends(request()->query())->links('pagination::bootstrap-5') }}
             </div>
         @endif
+        <div class="text-center text-muted small mt-2">
+            Showing {{ $customers->firstItem() }}–{{ $customers->lastItem() }} of {{ $customers->total() }} results
+        </div>
     </div>
 </div>
 
 <!-- Customer Modal (Add / Edit) -->
 <div class="modal fade" id="customerModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="customerModalTitle">Add Customer</h5>
@@ -221,23 +519,23 @@
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-sm-6">
                             <label class="form-label">First Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="first_name" id="field_first_name" required>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Last Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="last_name" id="field_last_name" required>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Email <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" name="email" id="field_email" required>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Phone</label>
                             <input type="text" class="form-control" name="phone" id="field_phone" placeholder="+63 9XX XXX XXXX">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Company</label>
                             <input type="text" class="form-control" name="company" id="field_company">
                         </div>
@@ -245,7 +543,7 @@
                             <label class="form-label">Address</label>
                             <textarea class="form-control" name="address" id="field_address" rows="2"></textarea>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Status <span class="text-danger">*</span></label>
                             <select class="form-select" name="status" id="field_status" required>
                                 <option value="prospect">Prospect</option>
@@ -254,7 +552,7 @@
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-sm-6">
                             <label class="form-label">Assigned User</label>
                             <select class="form-select" name="assigned_user_id" id="field_assigned_user_id">
                                 <option value="">Unassigned</option>
@@ -274,9 +572,9 @@
     </div>
 </div>
 
-<!-- Customer View Modal (NEW - This was missing!) -->
+<!-- Customer View Modal -->
 <div class="modal fade" id="customerViewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewModalTitle">
@@ -289,27 +587,27 @@
                     <div class="col-md-8">
                         <h6 class="fw-bold mb-2"><i class="fas fa-user me-1 text-primary"></i>Customer Info</h6>
                         <div class="row g-2">
-                            <div class="col-md-6">
+                            <div class="col-sm-6">
                                 <strong>Name:</strong><br>
                                 <span id="view_name" class="text-muted fw-semibold fs-5"></span>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-sm-6">
                                 <strong>Status:</strong><br>
                                 <span id="view_status" class="badge badge-crm badge-info fs-6 px-3 py-2"></span>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-sm-6">
                                 <strong>Email:</strong><br>
                                 <span id="view_email" class="text-muted"></span>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-sm-6">
                                 <strong>Phone:</strong><br>
                                 <span id="view_phone" class="text-muted"></span>
                             </div>
-                            <div class="col-md-12">
+                            <div class="col-12">
                                 <strong>Company:</strong><br>
                                 <span id="view_company" class="text-muted"></span>
                             </div>
-                            <div class="col-md-12">
+                            <div class="col-12">
                                 <strong>Address:</strong><br>
                                 <div class="bg-light p-3 rounded" id="view_address"></div>
                             </div>
@@ -346,6 +644,7 @@
 <!-- Toast Container -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;"></div>
 
+</div>{{-- #customers-page --}}
 @endsection
 
 @push('scripts')
@@ -357,7 +656,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ DOM Content Loaded');
 
-        // Initialize modal
         const modalElement = document.getElementById('customerModal');
         if (modalElement) {
             customerModal = new bootstrap.Modal(modalElement);
@@ -366,7 +664,6 @@
             console.error('❌ Could not find #customerModal element');
         }
 
-        // Attach click handler to Add Customer button
         const addButton = document.getElementById('addCustomerBtn');
         if (addButton) {
             addButton.addEventListener('click', function(e) {
@@ -378,9 +675,7 @@
     });
 
     document.querySelectorAll('#customerModal select').forEach(el => {
-        el.addEventListener('change', function(e) {
-            e.stopPropagation();
-        });
+        el.addEventListener('change', function(e) { e.stopPropagation(); });
     });
 
     document.querySelectorAll('#filterForm select').forEach(el => {
@@ -389,7 +684,6 @@
         });
     });
 
-    // FIX #5: Guard both lines inside the same if block
     function createCustomer() {
         console.log('✅ createCustomer() called');
 
@@ -401,12 +695,11 @@
         const form = document.getElementById('customerForm');
         if (form) {
             form.reset();
-            form.removeAttribute('data-id'); // FIX #5: was outside the if block before
+            form.removeAttribute('data-id');
         }
 
         document.getElementById('customerModalTitle').textContent = 'Add New Customer';
 
-        // Default status
         const statusField = document.getElementById('field_status');
         if (statusField) statusField.value = 'prospect';
 
@@ -414,7 +707,6 @@
         console.log('✅ Modal shown');
     }
 
-    // FIX #2 + #3: Use correct field IDs and show modal after populating
     window.editCustomer = async function(id) {
         try {
             const res = await fetch(`/admin/customers/${id}`);
@@ -425,10 +717,9 @@
             const form = document.getElementById('customerForm');
             if (form) {
                 form.reset();
-                form.dataset.id = c.id; // FIX #3: set dataset.id so submit handler sends PATCH
+                form.dataset.id = c.id;
             }
 
-            // FIX #3: Use the correct field IDs that exist in the modal
             document.getElementById('field_first_name').value = c.first_name ?? '';
             document.getElementById('field_last_name').value = c.last_name ?? '';
             document.getElementById('field_email').value = c.email ?? '';
@@ -440,7 +731,6 @@
 
             document.getElementById('customerModalTitle').textContent = 'Edit Customer';
 
-            // FIX #2: Actually show the modal
             customerModal.show();
             console.log('✅ Edit modal shown');
         } catch (err) {
@@ -448,59 +738,50 @@
         }
     }
 
-    // FIX #1: Single definition of viewCustomer — removed the duplicate window.viewCustomer that showed a plain alert
-   // FIXED viewCustomer - now shows modal and handles missing data
-window.viewCustomer = async function(id) {
-    try {
-        console.log(`🔍 Fetching customer ${id}`);
-        const res = await fetch(`/admin/customers/${id}`);
-        const data = await res.json();
+    window.viewCustomer = async function(id) {
+        try {
+            console.log(`🔍 Fetching customer ${id}`);
+            const res = await fetch(`/admin/customers/${id}`);
+            const data = await res.json();
 
-        const c = data.customer;
+            const c = data.customer;
 
-        // Populate all fields with fallbacks
-        document.getElementById('view_name').innerText = `${c.first_name || ''} ${c.last_name || ''}`.trim() || '—';
-        document.getElementById('view_email').innerText = c.email || '—';
-        document.getElementById('view_phone').innerText = c.phone || '—';
-        document.getElementById('view_company').innerText = c.company || '—';
-        document.getElementById('view_status').innerText = c.status ? ucfirst(c.status) : '—';
-        document.getElementById('view_status').className = `badge badge-crm badge-${c.status || 'secondary'} fs-6 px-3 py-2`;
-        document.getElementById('view_address').innerHTML = c.address ? `<div>${c.address.replace(/\n/g, '<br>')}</div>` : '<em>No address</em>';
-        document.getElementById('view_initials').innerText = c.initials || '?';
-        document.getElementById('view_customer_id').innerText = `#${c.id}`;
-        document.getElementById('view_created').innerText = c.created_at ? new Date(c.created_at).toLocaleDateString() : '—';
+            document.getElementById('view_name').innerText = `${c.first_name || ''} ${c.last_name || ''}`.trim() || '—';
+            document.getElementById('view_email').innerText = c.email || '—';
+            document.getElementById('view_phone').innerText = c.phone || '—';
+            document.getElementById('view_company').innerText = c.company || '—';
+            document.getElementById('view_status').innerText = c.status ? ucfirst(c.status) : '—';
+            document.getElementById('view_status').className = `badge badge-crm badge-${c.status || 'secondary'} fs-6 px-3 py-2`;
+            document.getElementById('view_address').innerHTML = c.address ? `<div>${c.address.replace(/\n/g, '<br>')}</div>` : '<em>No address</em>';
+            document.getElementById('view_initials').innerText = c.initials || '?';
+            document.getElementById('view_customer_id').innerText = `#${c.id}`;
+            document.getElementById('view_created').innerText = c.created_at ? new Date(c.created_at).toLocaleDateString() : '—';
 
-        // Show the modal
-        const viewModalElement = document.getElementById('customerViewModal');
-        if (viewModalElement) {
-            const viewModal = new bootstrap.Modal(viewModalElement);
-            viewModal.show();
-            console.log('✅ Customer view modal shown');
-        } else {
-            console.error('❌ View modal not found');
+            const viewModalElement = document.getElementById('customerViewModal');
+            if (viewModalElement) {
+                const viewModal = new bootstrap.Modal(viewModalElement);
+                viewModal.show();
+                console.log('✅ Customer view modal shown');
+            } else {
+                console.error('❌ View modal not found');
+            }
+        } catch (err) {
+            console.error('❌ viewCustomer error:', err);
+            showToast('Failed to load customer details', 'danger');
         }
-    } catch (err) {
-        console.error('❌ viewCustomer error:', err);
-        showToast('Failed to load customer details', 'danger');
     }
-}
 
-// Helper function
-function ucfirst(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
+    function ucfirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
 
-// Optional: Edit from view modal
-window.editCustomerFromView = function() {
-    const viewModal = bootstrap.Modal.getInstance(document.getElementById('customerViewModal'));
-    viewModal.hide();
-    
-    // Extract ID from view_customer_id and trigger edit
-    const customerId = document.getElementById('view_customer_id').innerText.replace('#', '');
-    editCustomer(customerId);
-};
+    window.editCustomerFromView = function() {
+        const viewModal = bootstrap.Modal.getInstance(document.getElementById('customerViewModal'));
+        viewModal.hide();
+        const customerId = document.getElementById('view_customer_id').innerText.replace('#', '');
+        editCustomer(customerId);
+    };
 
-    // FIX #4: Read CSRF token from meta tag instead of hidden input for reliability
     window.deleteCustomer = function(id, name) {
         if (!confirm(`Delete ${name}?`)) return;
 
@@ -523,7 +804,6 @@ window.editCustomerFromView = function() {
         .catch(() => showToast('Delete failed', 'danger'));
     }
 
-    // Toast function
     function showToast(message, type = 'success') {
         const bg = type === 'success' ? 'success' : 'danger';
         const toastHTML = `
@@ -550,7 +830,6 @@ window.editCustomerFromView = function() {
         setTimeout(() => toastEl.remove(), 5000);
     }
 
-    // FIX #6: Removed unused `let method = "POST"` variable
     document.getElementById('customerForm').addEventListener('submit', function(e) {
         e.preventDefault();
 

@@ -2,7 +2,441 @@
 @section('title', 'Leads')
 @section('breadcrumb', 'Leads')
 
+@push('styles')
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    /* ── Font: match Customer page ── */
+    #leads-page,
+    #leads-page *:not(i) {
+        font-family: 'DM Sans', sans-serif !important;
+    }
+
+    /* ── Stats grid: 2-col mobile, 3-col md, 6-col lg ── */
+    #leads-page .row.g-3.mb-4 {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem !important;
+    }
+    @media (min-width: 576px) {
+        #leads-page .row.g-3.mb-4 { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 992px) {
+        #leads-page .row.g-3.mb-4 { grid-template-columns: repeat(6, 1fr); }
+    }
+    #leads-page .row.g-3.mb-4 > * {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* ── Stat cards ── */
+    #leads-page .stat-card {
+        background: #fff;
+        border: 1px solid #eef2ff;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(15,23,42,.05);
+    }
+    #leads-page .stat-icon {
+        border-radius: 10px;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+    }
+    #leads-page .stat-icon i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    #leads-page .stat-value {
+        font-weight: 800;
+        line-height: 1.1;
+        margin-top: 8px;
+    }
+    #leads-page .stat-label {
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-top: 3px;
+        font-weight: 500;
+    }
+
+    /* ── Filter form responsive ── */
+    #leads-page .crm-card-body form {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        align-items: flex-end;
+        width: 100%;
+    }
+    #leads-page .search-bar {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    #leads-page .crm-card-body form .crm-input[name="status"],
+    #leads-page .crm-card-body form .crm-input[name="priority"] {
+        flex: 0 0 140px;
+        width: 140px;
+        min-width: 0;
+    }
+    #leads-page .crm-card-body form .btn-crm-primary,
+    #leads-page .crm-card-body form .btn-crm-secondary {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    @media (max-width: 575px) {
+        #leads-page .crm-card-body form {
+            flex-wrap: wrap;
+        }
+        #leads-page .search-bar {
+            flex: 1 1 100%;
+        }
+        #leads-page .crm-card-body form .crm-input[name="status"],
+        #leads-page .crm-card-body form .crm-input[name="priority"] {
+            flex: 1 1 calc(50% - 0.25rem);
+            width: auto;
+        }
+    }
+
+    /* ── Table responsive ── */
+    #leads-page .crm-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    #leads-page .crm-table {
+        min-width: 700px;
+    }
+
+    /* ── Mobile card view for rows ── */
+    @media (max-width: 575px) {
+        #leads-page .crm-table thead { display: none; }
+        #leads-page .crm-table,
+        #leads-page .crm-table tbody,
+        #leads-page .crm-table tr,
+        #leads-page .crm-table td { display: block; width: 100%; }
+        #leads-page .crm-table tr {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+        #leads-page .crm-table td {
+            border: none;
+            padding: 0.3rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.82rem;
+        }
+        #leads-page .crm-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #9ca3af;
+            min-width: 72px;
+            padding-top: 2px;
+            flex-shrink: 0;
+        }
+    }
+
+    /* ── Pagination ── */
+    .leads-pagination-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 0;
+        padding: 0.85rem 1rem;
+        border-top: 1px solid #eef2ff;
+    }
+    /* Tailwind nav structure */
+    .leads-pagination-wrap nav {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    .leads-pagination-wrap nav > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        width: 100%;
+    }
+    .leads-pagination-wrap nav span,
+    .leads-pagination-wrap nav a {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 0 0.55rem !important;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: #374151 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        transition: all .15s !important;
+        line-height: 1 !important;
+    }
+    .leads-pagination-wrap nav a:hover {
+        background: #f3f4f6 !important;
+        border-color: #d1d5db !important;
+        color: #111827 !important;
+    }
+    .leads-pagination-wrap nav span[aria-current="page"] > span {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3) !important;
+        border-radius: 8px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 0.55rem !important;
+    }
+    .leads-pagination-wrap nav span[aria-disabled="true"] > span {
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        color: #c0c5ce !important;
+        cursor: not-allowed !important;
+    }
+    .leads-pagination-wrap nav span:not([aria-current]):not([aria-label]):not([aria-disabled]) {
+        border-color: transparent !important;
+        background: transparent !important;
+        cursor: default !important;
+        color: #9ca3af !important;
+    }
+    /* Bootstrap 5 ul.pagination structure */
+    .leads-pagination-wrap .pagination {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.3rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+        width: 100% !important;
+    }
+    .leads-pagination-wrap .pagination .page-item { list-style: none !important; }
+    .leads-pagination-wrap .pagination .page-link {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 0 0.55rem !important;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: #374151 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        transition: all .15s !important;
+        line-height: 1 !important;
+        box-shadow: none !important;
+    }
+    .leads-pagination-wrap .pagination .page-link:hover {
+        background: #f3f4f6 !important;
+        border-color: #d1d5db !important;
+        color: #111827 !important;
+        z-index: auto !important;
+    }
+    .leads-pagination-wrap .pagination .page-item.active .page-link {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3) !important;
+    }
+    .leads-pagination-wrap .pagination .page-item.disabled .page-link {
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        color: #c0c5ce !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+    .leads-pagination-wrap svg {
+        width: 14px !important;
+        height: 14px !important;
+        display: block !important;
+        flex-shrink: 0 !important;
+        pointer-events: none;
+    }
+    @media (max-width: 480px) {
+        .leads-pagination-wrap nav span,
+        .leads-pagination-wrap nav a,
+        .leads-pagination-wrap .pagination .page-link {
+            min-width: 30px !important;
+            height: 30px !important;
+            font-size: 0.78rem !important;
+            border-radius: 6px !important;
+        }
+        .leads-pagination-wrap nav span[aria-current="page"] > span {
+            min-width: 30px !important;
+            height: 30px !important;
+            border-radius: 6px !important;
+        }
+        .leads-pagination-wrap svg { width: 12px !important; height: 12px !important; }
+    }
+
+    /* ── Layout toggle ── */
+    #leads-page .layout-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        background: #f1f5f9;
+        border-radius: 10px;
+        padding: 3px;
+    }
+    #leads-page .layout-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        padding: 0.32rem 0.7rem;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .15s;
+        font-family: 'DM Sans', sans-serif;
+    }
+    #leads-page .layout-btn.active {
+        background: #fff;
+        color: #2563eb;
+        box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    #leads-page .layout-btn:hover:not(.active) { color: #374151; }
+
+    /* ── Kanban board ── */
+    #leads-page .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.75rem;
+        padding: 1rem;
+        overflow-x: auto;
+    }
+    @media (max-width: 991px) {
+        #leads-page .kanban-board { grid-template-columns: repeat(3, minmax(210px, 1fr)); }
+    }
+    @media (max-width: 575px) {
+        #leads-page .kanban-board { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+    }
+    #leads-page .kanban-col {
+        background: #f8fafc;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    #leads-page .kanban-col-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.7rem 0.9rem 0.6rem;
+        border-bottom: 2px solid;
+        border-radius: 14px 14px 0 0;
+    }
+    #leads-page .kanban-col-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+    #leads-page .kanban-col-count {
+        font-size: 0.7rem;
+        font-weight: 700;
+        border-radius: 20px;
+        padding: 1px 7px;
+        background: rgba(0,0,0,.07);
+    }
+    #leads-page .kanban-cards {
+        padding: 0.6rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex: 1;
+        min-height: 60px;
+    }
+    #leads-page .kanban-card {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        padding: 0.7rem 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        cursor: pointer;
+        transition: box-shadow .15s, transform .1s;
+    }
+    #leads-page .kanban-card:hover {
+        box-shadow: 0 4px 14px rgba(0,0,0,.1);
+        transform: translateY(-1px);
+    }
+    #leads-page .kanban-card-title {
+        font-size: 0.81rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.3rem;
+        line-height: 1.35;
+    }
+    #leads-page .kanban-card-meta {
+        font-size: 0.71rem;
+        color: #64748b;
+        display: flex;
+        flex-direction: column;
+        gap: 0.18rem;
+    }
+    #leads-page .kanban-card-value {
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: #10b981;
+        margin-top: 0.3rem;
+    }
+    #leads-page .kanban-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 0.45rem;
+        padding-top: 0.4rem;
+        border-top: 1px solid #f1f5f9;
+        gap: 0.25rem;
+    }
+    #leads-page .kanban-empty {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.73rem;
+        padding: 0.85rem 0.5rem;
+    }
+
+    /* ── Page header responsive ── */
+    @media (max-width: 575px) {
+        #leads-page .page-header { flex-direction: column; gap: 0.75rem; }
+        #leads-page .page-header .btn-crm-primary { width: 100%; justify-content: center; }
+        #leads-page .crm-card-body form .btn-crm-primary,
+        #leads-page .crm-card-body form .btn-crm-secondary { flex: 1 1 auto; justify-content: center; }
+    }
+</style>
+@endpush
+
 @section('content')
+<div id="leads-page">
 <div class="page-header">
     <div class="page-header-left">
         <h1 class="page-title"><i class="fas fa-bullseye me-2" style="color:var(--crm-warning)"></i>Leads</h1>
@@ -71,10 +505,19 @@
     <div class="crm-card-header">
         <i class="fas fa-list" style="color:var(--crm-warning)"></i>
         <h5 class="card-title">All Leads</h5>
-        <span class="ms-auto badge-crm badge-warning">{{ $leads->total() }} records</span>
+        <span class="ms-auto badge-crm badge-warning me-3">{{ $leads->total() }} records</span>
+        <div class="layout-toggle" role="group" aria-label="View layout">
+            <button class="layout-btn active" id="btnTable" onclick="setLayout('table')">
+                <i class="fas fa-table-list"></i> Table
+            </button>
+            <button class="layout-btn" id="btnKanban" onclick="setLayout('kanban')">
+                <i class="fas fa-columns"></i> Kanban
+            </button>
+        </div>
     </div>
     @if($leads->count())
-    <div style="overflow-x:auto">
+    <div id="tableView">
+    <div class="crm-table-wrap">
         <table class="crm-table">
             <thead>
                 <tr>
@@ -93,33 +536,32 @@
             <tbody>
                 @foreach($leads as $lead)
                 <tr>
-                    <td style="font-weight:600;max-width:200px">{{ $lead->name }}</td>
-                    <td style="font-size:13px">
+                    <td data-label="Lead" style="font-weight:600;max-width:200px">{{ $lead->name }}</td>
+                    <td data-label="Contact" style="font-size:13px">
                         @if($lead->customer)
                             <div>{{ $lead->customer->first_name }} {{ $lead->customer->last_name }}</div>
                             <div style="font-size:11px;color:var(--crm-muted)">{{ $lead->customer->email }}</div>
                         @else <span style="color:var(--crm-muted)">—</span> @endif
                     </td>
-                    <td style="font-size:13px">{{ $lead->email ?? '—' }}</td>
-                    <td><span class="badge-crm badge-secondary">{{ $lead->source ?? '—' }}</span></td>
-                    <td>
+                    <td data-label="Company" style="font-size:13px">{{ $lead->email ?? '—' }}</td>
+                    <td data-label="Source"><span class="badge-crm badge-secondary">{{ $lead->source ?? '—' }}</span></td>
+                    <td data-label="Priority">
                         @php $pb=['high'=>'danger','medium'=>'warning','low'=>'success'][$lead->priority]??'secondary'; @endphp
                         <span class="badge-crm badge-{{ $pb }}">{{ ucfirst($lead->priority) }}</span>
                     </td>
-                    <td>
+                    <td data-label="Status">
                         @php $sb=['new'=>'warning','contacted'=>'info','negotiating'=>'purple','closed'=>'success','lost'=>'danger'][$lead->status]??'secondary'; @endphp
                         <span class="badge-crm badge-{{ $sb }}">{{ ucfirst($lead->status) }}</span>
                     </td>
-                    <td style="font-weight:600;color:var(--crm-success)">
-                        {{ $lead->expected_value ? '$'.number_format($lead->expected_value) : '—' }}
+                    <td data-label="Value" style="font-weight:600;color:var(--crm-success)">
+                        {{ $lead->expected_value ? '₱'.number_format($lead->expected_value) : '—' }}
                     </td>
-                    <td style="font-size:12px">
+                    <td data-label="Follow Up" style="font-size:12px">
                         @php $priority_color = ['high'=>'danger', 'medium'=>'warning', 'low'=>'info'][$lead->priority]??'secondary'; @endphp
                         <span class="badge-crm badge-{{ $priority_color }}">{{ ucfirst($lead->priority) }}</span>
                     </td>
-                    <td style="font-size:12px">{{ $lead->assignedUser?->name ?? '—' }}</td>
-                    <td>
-                        <td style="width: 80px; padding: 8px 4px !important;">
+                    <td data-label="Assigned" style="font-size:12px">{{ $lead->assignedUser?->name ?? '—' }}</td>
+                    <td data-label="Actions" style="width: 80px; padding: 8px 4px !important;">
                             <div class="dropdown dropdown-actions">
                                 <button class="btn btn-sm btn-light dropdown-toggle p-1 shadow-sm" 
                                         type="button" 
@@ -141,17 +583,74 @@
                                     @endif
                                 </ul>
                             </div>
-                        </td>
                     </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
-    <div class="p-3 d-flex justify-content-between align-items-center" style="border-top:1px solid var(--crm-border)">
-        <span style="font-size:12px;color:var(--crm-muted)">Showing {{ $leads->firstItem() }}–{{ $leads->lastItem() }} of {{ $leads->total() }}</span>
-        {{ $leads->links() }}
+    <div class="leads-pagination-wrap">
+        {{ $leads->onEachSide(1)->appends(request()->query())->links('pagination::bootstrap-5') }}
     </div>
+    <div class="text-center text-muted small py-2" style="font-size:0.78rem">
+        Showing {{ $leads->firstItem() }}–{{ $leads->lastItem() }} of {{ $leads->total() }} results
+    </div>
+    </div>{{-- /#tableView --}}
+
+    {{-- KANBAN VIEW --}}
+    <div id="kanbanView" style="display:none;">
+        @php
+            $kanbanCols = [
+                'new'         => ['label'=>'New',         'color'=>'#f59e0b', 'bg'=>'#fffbeb'],
+                'contacted'   => ['label'=>'Contacted',   'color'=>'#06b6d4', 'bg'=>'#ecfeff'],
+                'negotiating' => ['label'=>'Negotiating', 'color'=>'#8b5cf6', 'bg'=>'#f5f3ff'],
+                'closed'      => ['label'=>'Closed',      'color'=>'#10b981', 'bg'=>'#ecfdf5'],
+                'lost'        => ['label'=>'Lost',        'color'=>'#ef4444', 'bg'=>'#fef2f2'],
+            ];
+            $leadsByStatus = $leads->groupBy('status');
+        @endphp
+        <div class="kanban-board">
+            @foreach($kanbanCols as $statusKey => $col)
+            @php $colLeads = $leadsByStatus->get($statusKey, collect()); @endphp
+            <div class="kanban-col">
+                <div class="kanban-col-header" style="border-color:{{ $col['color'] }};background:{{ $col['bg'] }}">
+                    <span class="kanban-col-title" style="color:{{ $col['color'] }}">{{ $col['label'] }}</span>
+                    <span class="kanban-col-count" style="color:{{ $col['color'] }}">{{ $colLeads->count() }}</span>
+                </div>
+                <div class="kanban-cards">
+                    @forelse($colLeads as $lead)
+                    <div class="kanban-card" onclick="viewLead({{ $lead->id }})">
+                        <div class="kanban-card-title">{{ $lead->name }}</div>
+                        <div class="kanban-card-meta">
+                            @if($lead->customer)
+                                <span><i class="fas fa-user" style="width:11px;opacity:.55"></i> {{ $lead->customer->first_name }} {{ $lead->customer->last_name }}</span>
+                            @endif
+                            @if($lead->email)
+                                <span><i class="fas fa-envelope" style="width:11px;opacity:.55"></i> {{ $lead->email }}</span>
+                            @endif
+                        </div>
+                        @if($lead->expected_value)
+                            <div class="kanban-card-value"><i class="fas fa-peso-sign" style="font-size:.7rem"></i> {{ number_format($lead->expected_value) }}</div>
+                        @endif
+                        <div class="kanban-card-footer">
+                            @php $pb=['high'=>'danger','medium'=>'warning','low'=>'success'][$lead->priority]??'secondary'; @endphp
+                            <span class="badge-crm badge-{{ $pb }}" style="font-size:.65rem;padding:2px 7px">{{ ucfirst($lead->priority) }}</span>
+                            <span style="font-size:.7rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px">
+                                <i class="fas fa-user-circle"></i>
+                                {{ $lead->assignedUser?->name ?? 'Unassigned' }}
+                            </span>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="kanban-empty">
+                        <i class="fas fa-inbox" style="display:block;font-size:1.1rem;margin-bottom:4px;opacity:.3"></i>No leads
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>{{-- /#kanbanView --}}
     @else
     <div class="empty-state">
         <div class="empty-icon"><i class="fas fa-bullseye"></i></div>
@@ -220,7 +719,7 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="crm-label">Estimated Value ($)</label>
+                            <label class="crm-label">Estimated Value (₱)</label>
                             <input type="number" name="expected_value" class="crm-input" placeholder="5000">
                         </div>
                         <div class="col-md-4">
@@ -299,7 +798,7 @@
                                 @foreach(['high','medium','low'] as $p)<option value="{{ $p }}">{{ ucfirst($p) }}</option>@endforeach
                             </select>
                         </div>
-                        <div class="col-md-4"><label class="crm-label">Estimated Value ($)</label><input type="number" name="expected_value" id="edit_expected_value" class="crm-input" placeholder="5000"></div>
+                        <div class="col-md-4"><label class="crm-label">Estimated Value (₱)</label><input type="number" name="expected_value" id="edit_expected_value" class="crm-input" placeholder="5000"></div>
                         <div class="col-md-4">
                             <label class="crm-label">Assigned To</label>
                             <select name="assigned_user_id" id="edit_assigned_user_id" class="crm-input">
@@ -353,6 +852,7 @@
         </div>
     </div>
 </div>
+</div>{{-- #leads-page --}}
 @endsection
 
 @push('scripts')
@@ -547,7 +1047,7 @@ async function viewLead(id) {
                     <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Phone:</strong> ${l.phone || '—'}</div>
                     <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Status:</strong> ${l.status ? l.status.charAt(0).toUpperCase() + l.status.slice(1) : '—'}</div>
                     <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Priority:</strong> ${l.priority ? l.priority.charAt(0).toUpperCase() + l.priority.slice(1) : '—'}</div>
-                    <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Expected Value:</strong> ${l.expected_value ? '$' + Number(l.expected_value).toLocaleString() : '—'}</div>
+                    <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Expected Value:</strong> ${l.expected_value ? '₱' + Number(l.expected_value).toLocaleString() : '—'}</div>
                     <div style="font-size:14px;color:#475569;margin-top:.5rem"><strong>Source:</strong> ${l.source || '—'}</div>
                 </div>
             </div>
@@ -603,5 +1103,34 @@ async function confirmDelete() {
         showToast('Network error while deleting.', 'danger');
     }
 }
+// ==================== LAYOUT TOGGLE ====================
+function setLayout(mode) {
+    const tableView  = document.getElementById('tableView');
+    const kanbanView = document.getElementById('kanbanView');
+    const btnTable   = document.getElementById('btnTable');
+    const btnKanban  = document.getElementById('btnKanban');
+
+    if (!tableView || !kanbanView) return;
+
+    if (mode === 'kanban') {
+        tableView.style.display  = 'none';
+        kanbanView.style.display = 'block';
+        btnKanban.classList.add('active');
+        btnTable.classList.remove('active');
+    } else {
+        tableView.style.display  = 'block';
+        kanbanView.style.display = 'none';
+        btnTable.classList.add('active');
+        btnKanban.classList.remove('active');
+    }
+    try { localStorage.setItem('leadsLayout', mode); } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    try {
+        const saved = localStorage.getItem('leadsLayout');
+        if (saved === 'kanban') setLayout('kanban');
+    } catch(e) {}
+});
 </script>
 @endpush

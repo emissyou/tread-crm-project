@@ -3,7 +3,284 @@
 @section('page_title', 'Follow-ups')
 @section('page_subtitle', 'Manage scheduled follow-ups and reminders for customers and leads.')
 
+@push('styles')
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    /* ── Font: same as Customer & Lead pages ── */
+    #followup-page, #followup-page *:not(i) {
+        font-family: 'DM Sans', sans-serif !important;
+    }
+
+    /* ── Stats grid: 2-col mobile → 4-col desktop ── */
+    #followup-page .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    @media (min-width: 768px) {
+        #followup-page .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    /* ── Avatar circles scoped to page ── */
+    #followup-page .avatar-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #fff !important;
+        flex-shrink: 0;
+    }
+    #followup-page .avatar-circle.bg-primary  { background: linear-gradient(135deg,#3b82f6,#2563eb) !important; }
+    #followup-page .avatar-circle.bg-warning  { background: linear-gradient(135deg,#f59e0b,#d97706) !important; }
+    #followup-page .avatar-circle.bg-danger   { background: linear-gradient(135deg,#ef4444,#dc2626) !important; }
+    #followup-page .avatar-circle.bg-success  { background: linear-gradient(135deg,#10b981,#059669) !important; }
+    #followup-page .avatar-circle.bg-secondary{ background: linear-gradient(135deg,#6b7280,#4b5563) !important; }
+
+    /* Small avatar for assigned user in table */
+    #followup-page .avatar-circle-small {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #fff !important;
+        flex-shrink: 0;
+        background: linear-gradient(135deg,#6b7280,#4b5563);
+    }
+
+    /* ── Filter form responsive ── */
+    #followup-page .filter-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    @media (min-width: 576px) {
+        #followup-page .filter-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 992px) {
+        #followup-page .filter-row { grid-template-columns: 2fr 1fr 1fr 1fr; align-items: end; }
+    }
+
+    /* ── Table: horizontally scrollable on small screens ── */
+    #followup-page .crm-table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    #followup-page .crm-table {
+        min-width: 620px;
+    }
+
+    /* ── Mobile card view for rows ── */
+    @media (max-width: 575px) {
+        #followup-page .crm-table thead { display: none; }
+        #followup-page .crm-table,
+        #followup-page .crm-table tbody,
+        #followup-page .crm-table tr,
+        #followup-page .crm-table td { display: block; width: 100%; }
+        #followup-page .crm-table tr {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+        #followup-page .crm-table td {
+            border: none;
+            padding: 0.3rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.82rem;
+        }
+        #followup-page .crm-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #9ca3af;
+            min-width: 76px;
+            padding-top: 2px;
+            flex-shrink: 0;
+        }
+        /* Overdue row highlight fallback on mobile */
+        #followup-page .crm-table tr.table-warning {
+            border-color: #fcd34d;
+            background: #fffbeb !important;
+        }
+    }
+
+    /* ── Pagination ── */
+    .followup-pagination-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.85rem 1rem;
+        border-top: 1px solid #eef2ff;
+    }
+    /* Tailwind nav structure */
+    .followup-pagination-wrap nav {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    .followup-pagination-wrap nav > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        width: 100%;
+    }
+    .followup-pagination-wrap nav span,
+    .followup-pagination-wrap nav a {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 0 0.55rem !important;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: #374151 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        transition: all .15s !important;
+        line-height: 1 !important;
+    }
+    .followup-pagination-wrap nav a:hover {
+        background: #f3f4f6 !important;
+        border-color: #d1d5db !important;
+        color: #111827 !important;
+    }
+    .followup-pagination-wrap nav span[aria-current="page"] > span {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3) !important;
+        border-radius: 8px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 0.55rem !important;
+    }
+    .followup-pagination-wrap nav span[aria-disabled="true"] > span {
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        color: #c0c5ce !important;
+        cursor: not-allowed !important;
+    }
+    .followup-pagination-wrap nav span:not([aria-current]):not([aria-label]):not([aria-disabled]) {
+        border-color: transparent !important;
+        background: transparent !important;
+        cursor: default !important;
+        color: #9ca3af !important;
+    }
+    /* Bootstrap 5 ul.pagination structure */
+    .followup-pagination-wrap .pagination {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.3rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+        width: 100% !important;
+    }
+    .followup-pagination-wrap .pagination .page-item { list-style: none !important; }
+    .followup-pagination-wrap .pagination .page-link {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 0 0.55rem !important;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: #374151 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        text-decoration: none !important;
+        transition: all .15s !important;
+        line-height: 1 !important;
+        box-shadow: none !important;
+    }
+    .followup-pagination-wrap .pagination .page-link:hover {
+        background: #f3f4f6 !important;
+        border-color: #d1d5db !important;
+        color: #111827 !important;
+        z-index: auto !important;
+    }
+    .followup-pagination-wrap .pagination .page-item.active .page-link {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3) !important;
+    }
+    .followup-pagination-wrap .pagination .page-item.disabled .page-link {
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        color: #c0c5ce !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+    /* Cap SVG arrow size for both structures */
+    .followup-pagination-wrap svg {
+        width: 14px !important;
+        height: 14px !important;
+        display: block !important;
+        flex-shrink: 0 !important;
+        pointer-events: none;
+    }
+    @media (max-width: 480px) {
+        .followup-pagination-wrap nav span,
+        .followup-pagination-wrap nav a,
+        .followup-pagination-wrap .pagination .page-link {
+            min-width: 30px !important;
+            height: 30px !important;
+            font-size: 0.78rem !important;
+            border-radius: 6px !important;
+        }
+        .followup-pagination-wrap nav span[aria-current="page"] > span {
+            min-width: 30px !important;
+            height: 30px !important;
+            border-radius: 6px !important;
+        }
+        .followup-pagination-wrap svg {
+            width: 12px !important;
+            height: 12px !important;
+        }
+    }
+
+    /* ── Page header responsive ── */
+    @media (max-width: 575px) {
+        #followup-page .page-header { flex-direction: column; gap: 0.75rem; }
+        #followup-page .page-header .btn-crm-primary { width: 100%; justify-content: center; }
+    }
+</style>
+@endpush
+
 @section('content')
+<div id="followup-page">
 <div class="page-header">
     <div class="page-header-left">
         <h1 class="page-title"><i class="fas fa-calendar-check me-2 text-primary"></i>Follow-ups</h1>
@@ -15,8 +292,8 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
+<div class="stats-grid">
+    <div>
         <div class="crm-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="avatar-circle bg-primary">{{ $stats['total'] }}</div>
@@ -27,7 +304,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div>
         <div class="crm-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="avatar-circle bg-warning">{{ $stats['pending'] }}</div>
@@ -38,7 +315,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div>
         <div class="crm-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="avatar-circle bg-danger">{{ $stats['overdue'] }}</div>
@@ -49,7 +326,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div>
         <div class="crm-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="avatar-circle bg-success">{{ $stats['completed'] }}</div>
@@ -65,12 +342,12 @@
 <!-- Filters -->
 <div class="crm-card mb-4">
     <div class="crm-card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-4">
+        <form method="GET" class="filter-row">
+            <div>
                 <label class="crm-label">Search</label>
                 <input type="text" class="crm-input" name="search" value="{{ request('search') }}" placeholder="Search follow-ups...">
             </div>
-            <div class="col-md-2">
+            <div>
                 <label class="crm-label">Status</label>
                 <select class="crm-input" name="status">
                     <option value="">All Status</option>
@@ -79,7 +356,7 @@
                     <option value="overdue" {{ request('status') === 'overdue' ? 'selected' : '' }}>Overdue</option>
                 </select>
             </div>
-           <div class="col-md-3">
+           <div>
                 <label class="crm-label">Assigned User</label>
                 <select class="crm-input" name="user_id"> <!-- ← Changed from assigned_user_id -->
                     <option value="">All Users</option>
@@ -90,7 +367,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3">
+            <div>
                 <label class="crm-label">Quick Filter</label>
                 <select class="crm-input" name="filter" onchange="this.form.submit()">
                     <option value="">All Follow-ups</option>
@@ -129,7 +406,7 @@
                 <tbody>
                     @forelse($followUps as $followUp)
                     <tr class="{{ $followUp->is_overdue ? 'table-warning' : '' }}">
-                        <td>
+                        <td data-label="Title">
                             <div>
                                 <div class="fw-semibold">{{ $followUp->title }}</div>
                                 @if($followUp->description)
@@ -137,7 +414,7 @@
                                 @endif
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Related To">
                             @if($followUp->customer)
                             <div>
                                 <i class="fas fa-user text-primary me-1"></i>
@@ -154,7 +431,7 @@
                             <span class="text-muted">No relation</span>
                             @endif
                         </td>
-                        <td>
+                        <td data-label="Due Date">
                             <div class="fw-semibold">{{ $followUp->due_date->format('M d, Y') }}</div>
                             <div class="text-muted small">{{ $followUp->due_date->format('h:i A') }}</div>
                             @if($followUp->is_overdue)
@@ -165,12 +442,12 @@
                             <span class="badge-crm badge-info">Due Soon</span>
                             @endif
                         </td>
-                        <td>
+                        <td data-label="Status">
                             <span class="badge-crm badge-{{ $followUp->status_badge }}">
                                 {{ ucfirst($followUp->status) }}
                             </span>
                         </td>
-                       <td>
+                       <td data-label="Assigned">
                             @if($followUp->user) 
                             <div class="d-flex align-items-center gap-2">
                                 <div class="avatar-circle-small bg-secondary">
@@ -182,7 +459,7 @@
                             <span class="text-muted small">Unassigned</span>
                             @endif
                         </td>
-                        <td>
+                        <td data-label="Actions">
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-ellipsis-v"></i>
@@ -219,8 +496,11 @@
         </div>
 
         @if($followUps->hasPages())
-        <div class="d-flex justify-content-center mt-4">
-            {{ $followUps->links() }}
+        <div class="followup-pagination-wrap">
+            {{ $followUps->onEachSide(1)->appends(request()->query())->links('pagination::bootstrap-5') }}
+        </div>
+        <div class="text-center text-muted py-2" style="font-size:0.78rem">
+            Showing {{ $followUps->firstItem() }}–{{ $followUps->lastItem() }} of {{ $followUps->total() }} results
         </div>
         @endif
     </div>
@@ -246,7 +526,7 @@
                             <label class="crm-label">Description</label>
                             <textarea class="crm-input" name="description" rows="3" placeholder="Details about this follow-up..."></textarea>
                         </div>
-                        <div class="col-md-6">
+                        <div>
                             <label class="crm-label">Related Customer</label>
                             <select class="crm-input" name="customer_id" id="customerSelect">
                                 <option value="">Select Customer (Optional)</option>
@@ -255,7 +535,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div>
                             <label class="crm-label">Related Lead</label>
                             <select class="crm-input" name="lead_id" id="leadSelect">
                                 <option value="">Select Lead (Optional)</option>
@@ -264,11 +544,11 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div>
                             <label class="crm-label">Due Date & Time *</label>
                             <input type="datetime-local" class="crm-input" name="due_date" required>
                         </div>
-                        <div class="col-md-6">
+                        <div>
                             <label class="crm-label">Assigned User</label>
                             <select class="crm-input" name="user_id"> <!-- ← Changed from assigned_user_id -->
                                 <option value="">Select User</option>
@@ -290,7 +570,7 @@
             </form>
         </div>
     </div>
-</div>
+</div>{{-- #followup-page --}}
 @endsection
 
 @push('scripts')

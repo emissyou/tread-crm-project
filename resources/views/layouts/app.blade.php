@@ -33,6 +33,18 @@
     padding: 0; 
 }
 
+/* ── Global font-family protection for Font Awesome icons ── */
+i[class*="fa"],
+i[class^="fa"],
+i.fas, i.far, i.fal, i.fab, i.fad, i.fass,
+.fas, .far, .fal, .fab, .fad {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "FontAwesome" !important;
+    font-style: normal !important;
+    font-weight: 900 !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     background: #f5f7fc;
@@ -686,7 +698,7 @@ body.sidebar-collapsed .hb-bars span { width: 16px !important; }
     white-space: nowrap;
 }
 
-.nav-item-icon {
+.sidebar .nav-item-icon {
     width: 36px; 
     height: 36px;
     border-radius: 10px;
@@ -744,7 +756,7 @@ body.sidebar-collapsed .hb-bars span { width: 16px !important; }
     transform: translateX(4px);
 }
 
-.nav-item:hover .nav-item-icon { 
+.sidebar .nav-item:hover .nav-item-icon { 
     background: rgba(91, 141, 239, 0.25);
     color: #b3d1ff;
 }
@@ -756,7 +768,7 @@ body.sidebar-collapsed .hb-bars span { width: 16px !important; }
     color: #fff;
 }
 
-.nav-item.active .nav-item-icon {
+.sidebar .nav-item.active .nav-item-icon {
     background: rgba(91, 141, 239, 0.4);
     box-shadow: 0 0 14px rgba(91, 141, 239, 0.3);
     color: #d4e1ff;
@@ -933,6 +945,14 @@ body.sidebar-collapsed .logout-item:hover .logout-tip {
     opacity: 1; 
 }
 
+/* ── Re-assert FA font LAST so page-level !important overrides cannot win ── */
+i[class*="fa"],
+i[class^="fa"],
+i.fas, i.far, i.fal, i.fab, i.fad {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "FontAwesome" !important;
+    font-style: normal !important;
+    font-weight: 900 !important;
+}
 </style>
 @stack('styles')
 </head>
@@ -1026,13 +1046,13 @@ body.sidebar-collapsed .logout-item:hover .logout-tip {
             [
                 'label' => 'Pipeline',
                 'items' => array_filter([
-                    [
+                    $user->canViewReports() ? [
                         'label' => 'Reports',
                         'url' => route('admin.reports.index'),
                         'icon' => 'fa-chart-pie',
                         'active' => request()->routeIs('admin.reports.*'),
                         'tip' => 'View Pipeline & Data Reports',
-                    ],
+                    ] : null,
                     [
                         'label' => 'Customer',
                         'url' => route('admin.customers.index'),
