@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\DealController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -35,6 +37,23 @@ Route::post('/logout', function () {
     auth()->logout();
     return redirect('/login');
 })->name('logout');
+
+// ====================== FORGOT PASSWORD ROUTES ======================
+Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
+    ->middleware('guest')
+    ->name('password.request');
+
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.email');
+
+Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])
+    ->middleware('guest')
+    ->name('password.reset');
+
+Route::post('/reset-password', [NewPasswordController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.update');
 
 // ====================== ADMIN ROUTES ======================
 Route::middleware(['auth'])
@@ -169,4 +188,4 @@ Route::middleware(['auth'])
             ->middleware('admin')
             ->name('settings.index');
 
-    });  // ← This closes the main admin group
+    });
